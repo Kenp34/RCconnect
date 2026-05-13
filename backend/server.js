@@ -14,13 +14,13 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {
-    console.log(`Serveur démarré sur <http://localhost>:${PORT}`);
+  console.log(`Serveur démarré sur <http://localhost>:${PORT}`);
 });
 
 // Routes
-app.use('/api/auth',require('./routes/auth'));
-//app.use('/api/users',require('./routes/users'));
-//app.use('/api/posts',require('./routes/posts'));
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/posts',require('./routes/posts'));
 //app.use('/api/groups',require('./routes/groups'));
 
 mongoose.connect(process.env.MONGODB_URI)

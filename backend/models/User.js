@@ -17,7 +17,7 @@ const UserSchema = new mongoose.Schema({
 
 // Hash du mot de passe avant sauvegarde
 UserSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
+    if (!this.isModified('password')) return next;
     this.password = await bcrypt.hash(this.password, 12);
     next;
 });
@@ -27,3 +27,4 @@ UserSchema.methods.matchPassword = async function (pwd) {
 };
 
 module.exports = mongoose.model('User', UserSchema);
+

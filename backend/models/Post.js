@@ -1,4 +1,8 @@
 // models/Post.js
+
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+
 const PostSchema = new mongoose.Schema({
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     content: { type: String, required: true, maxlength: 2000 },
@@ -12,3 +16,5 @@ const PostSchema = new mongoose.Schema({
     }],
     pinned: { type: Boolean, default: false },
 }, { timestamps: true });
+
+module.exports = mongoose.model('Post', PostSchema);
