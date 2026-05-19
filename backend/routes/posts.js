@@ -3,108 +3,105 @@ const { protect } = require('../middleware/auth');
 const Post = require('../models/Post');
 const upload=require('../middleware/Upload');
 
+
+// GET /api/posts/user/:userId - Récupérer les posts d'un utilisateur
+router.get('/user/:userId', protect, async (req, res) => {
+  try {
+    const posts = await Post.find({ author: req.params.userId })
+      .sort({ createdAt: -1 })
+      .populate('author', 'name avatar');
+   
+    console.log("📝 Posts trouvés pour", req.params.userId, ":", posts.length);
+    res.json(posts);
+  } catch (err) {
+    console.error("❌ Erreur:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET /api/posts/feed - Récupérer le feed
 router.get('/feed', protect, async (req, res) => {
   try {
-    // Construire la liste : mes abonnements + moi-même
     const ids = [...req.user.following, req.user._id];
-
+   
     const posts = await Post.find({ author: { $in: ids } })
       .populate('author', 'name avatar department')
       .populate('comments.user', 'name avatar')
-      .sort({ createdAt: -1 })  // Plus récent en premier
-      .limit(20);               // Pagination simple
-
+      .sort({ createdAt: -1 })
+      .limit(20);
+   
     res.json(posts);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-
+// POST /api/posts - Créer un post
 router.post('/', protect, upload.single('image'), async (req, res) => {
   try {
     const postData = {
       author: req.user._id,
       content: req.body.content,
-      // Si une image est uploadée, on stocke son chemin
       image: req.file ? `/uploads/${req.file.filename}` : null
     };
-
+   
     const post = await Post.create(postData);
     await post.populate('author', 'name avatar department');
     res.status(201).json(post);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-
-
+// POST /api/posts/:id/like - Liker/Unliker un post
 router.post('/:id/like', protect, async (req, res) => {
-
-    try {
-
-        const post = await Post.findById(req.params.id);
-
-        if (!post) {
-            return res.status(404).json({
-                message: "Post introuvable"
-            });
-        }
-
-        // Vérifier si l'utilisateur a déjà liké
-        const liked = post.likes.some(
-            (id) => id.toString() === req.user._id.toString()
-        );
-
-        if (liked) {
-
-            // Retirer le like
-            post.likes = post.likes.filter(
-                (id) => id.toString() !== req.user._id.toString()
-            );
-
-        } else {
-
-            // Ajouter le like
-            post.likes.push(req.user._id);
-        }
-
-        await post.save();
-
-        res.status(200).json({
-            likes: post.likes.length,
-            liked: !liked
-        });
-
-    } catch (err) {
-
-        console.log(err);
-
-        res.status(500).json({
-            message: err.message
-        });
-    }
-})
-
-
-// DELETE /api/posts/:id
-router.delete('/:id', protect, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post introuvable' });
-    if (post.author.toString() !== req.user._id.toString())
-      return res.status(403).json({ message: 'Non autorisé' });
-    await post.deleteOne();
-    res.json({ message: 'Post supprimé' });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+   
+    const liked = post.likes.some(
+      id => id.toString() === req.user._id.toString()
+    );
+   
+    if (liked) {
+      post.likes = post.likes.filter(
+        id => id.toString() !== req.user._id.toString()
+      );
+    } else {
+      post.likes.push(req.user._id);
+    }
+   
+    await post.save();
+   
+    res.json({
+      liked: !liked,
+      likesCount: post.likes.length,
+      likes: post.likes,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
-// POST /api/posts/:id/comment
+// POST /api/posts/:id/comment - Commenter un post
 router.post('/:id/comment', protect, async (req, res) => {
   try {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ message: 'Texte requis' });
+   
     const post = await Post.findById(req.params.id);
-    post.comments.push({ user: req.user._id, text: req.body.text });
+    if (!post) return res.status(404).json({ message: 'Post introuvable' });
+   
+    post.comments.push({ user: req.user._id, text });
     await post.save();
-    await post.populate('comments.user', 'name avatar');
-    res.json(post.comments);
-  } catch (err) { res.status(500).json({ message: err.message }); }
-})
+   
+    await post.populate('comments.user', 'name department avatar');
+   
+    const newComment = post.comments[post.comments.length - 1];
+    res.status(201).json(newComment);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
-module.exports=router;
+module.exports = router;
