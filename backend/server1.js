@@ -241,5 +241,35 @@ router.post('/:id/follow', protect, async (req, res) => {
       message: "Erreur serveur"
     });
   }
-})
+})44
+
+
+
+
+
+
+
+ // Récupérer les suggestions
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!profile || !me) return;
+      setLoadingSuggestions(true);
+      try {
+        const { data: allUsers } = await axios.get(`${API}/users`, axiosConfig);
+        const followingIds = profile.following?.map(f => f._id) || [];
+        const filteredSuggestions = allUsers.filter(user =>
+          user._id !== me._id && !followingIds.includes(user._id)
+        ).slice(0, 5);
+        setSuggestions(filteredSuggestions);
+      } catch (error) {
+        console.error("Erreur suggestions:", error);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+
+    if (isMe && profile && me) {
+      fetchSuggestions();
+    }
+  }, [isMe, profile, me, token]);
 */

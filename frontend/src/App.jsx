@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Feed from './pages/Feed';
 import Profile from './pages/Profile';
+import Message from './pages/Message';
 import Directory from './pages/Directory';
 import './index.css';
 
@@ -38,6 +39,14 @@ export default function App() {
             <ProtectedRoute>
               <Layout>
                 <Profile />
+              </Layout>
+            </ProtectedRoute>
+          } />
+
+            <Route path="/messages" element={
+            <ProtectedRoute>
+              <Layout>
+                <Message/>
               </Layout>
             </ProtectedRoute>
           } />

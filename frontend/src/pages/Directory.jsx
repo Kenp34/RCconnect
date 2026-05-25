@@ -1,4 +1,4 @@
-import { useEffect,useState,useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -12,91 +12,96 @@ const COLORS = [
   'linear-gradient(135deg,#FBBF24,#F59E0B)',
 ];
 
-const DEPARTMENTS = ['Tous', 'Informatique', 'Marketing', 'RH', 'Finance', 'Direction', 'Design'];
+const DEPARTMENTS = ['Informatique', 'Marketing', 'RH', 'Finance', 'Direction', 'Design'];
 
 export default function Directory() {
-  const { token, user: me } = useAuth();
+  const { user: me, token } = useAuth();
   const navigate = useNavigate();
+ 
   const [users, setUsers] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState('Tous');
-  const [followStatus, setFollowStatus] = useState({});
+  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [followMessage, setFollowMessage] = useState({ show: false, text: '', type: '' });
+  const [followingIds, setFollowingIds] = useState([]);
 
   const axiosConfig = {
     headers: { Authorization: `Bearer ${token}` }
   };
 
-  // ✅ 1er useEffect : Charger les utilisateurs
+  const showMessage = (text, type = 'success') => {
+    setFollowMessage({ show: true, text, type });
+    setTimeout(() => setFollowMessage({ show: false, text: '', type: '' }), 3000);
+  };
+
+  // Récupérer tous les utilisateurs
   useEffect(() => {
     const fetchUsers = async () => {
+      if (!token) return;
       setLoading(true);
       try {
         const { data } = await axios.get(`${API}/users`, axiosConfig);
-        const filteredData=data.filter(user=>user._id!==me?._id);
-        setUsers(filteredData);
+        setUsers(data);
        
-        // Initialiser le statut de follow
-        const status = {};
-        data.forEach(user => {
-          status[user._id] = false;
-        });
-        setFollowStatus(status);
-      } catch (err) {
-        console.error("Erreur chargement utilisateurs:", err);
+        // Récupérer les IDs suivis par l'utilisateur courant
+        const { data: meData } = await axios.get(`${API}/users/me`, axiosConfig);
+        const followedIds = meData.following?.map(f => f._id || f) || [];
+        setFollowingIds(followedIds);
+       
+        // Filtrer les suggestions (utilisateurs non suivis et pas moi-même)
+        const suggestionsList = data.filter(user =>
+          user._id !== me?._id && !followedIds.includes(user._id)
+        ).slice(0, 5);
+        setSuggestions(suggestionsList);
+       
+      } catch (error) {
+        console.error("Erreur chargement users:", error);
       } finally {
         setLoading(false);
       }
     };
+   
+    fetchUsers();
+  }, [token, me?._id]);
 
-    if (token) {
-      fetchUsers();
-    }
-  }, [token]);
-
- 
- const filteredUsers= useMemo(() => {
-    if (users.length === 0) return;
-   
-    let filtered = [...users];
-   
-    // Filtre par recherche
-    if (searchTerm) {
-      filtered = filtered.filter(user =>
-        user.name?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-   
-    // Filtre par département
-    if (selectedDepartment !== 'Tous') {
-      filtered = filtered.filter(user =>
-        user.department === selectedDepartment
-      );
-    }
-   
-    return filtered;
-  }, [searchTerm, selectedDepartment, users]); // ✅ Dépendances correctes
-
+  // Follow / Unfollow
   const handleFollow = async (userId, userName) => {
     try {
       const { data } = await axios.post(`${API}/users/${userId}/follow`, {}, axiosConfig);
      
-      setFollowStatus(prev => ({
-        ...prev,
-        [userId]: data.following
-      }));
-     
-      // ✅ Optionnel: Mettre à jour la liste filtrée aussi
-      if (!data.following) {
-        // Si on unfollow, on pourrait refresh ou juste garder l'état
+      if (data.following) {
+        setFollowingIds(prev => [...prev, userId]);
+        setSuggestions(prev => prev.filter(u => u._id !== userId));
+        showMessage(`✅ Vous suivez maintenant ${userName}`, 'success');
+      } else {
+        setFollowingIds(prev => prev.filter(id => id !== userId));
+        showMessage(`❌ Vous ne suivez plus ${userName}`, 'success');
       }
      
-      alert(data.following ? `✅ Vous suivez maintenant ${userName}` : `❌ Vous ne suivez plus ${userName}`);
+      // Mettre à jour la liste des utilisateurs
+      setUsers(prev => prev.map(user =>
+        user._id === userId
+          ? { ...user, isFollowing: data.following }
+          : user
+      ));
+     
     } catch (err) {
       console.error('Erreur follow:', err);
-      alert(err.response?.data?.message || 'Erreur');
+      showMessage(err.response?.data?.message || 'Erreur lors du follow', 'error');
     }
   };
+
+  // Filtrer les utilisateurs
+  const filteredUsers = users.filter(user => {
+    if (user._id === me?._id) return false; // Ne pas afficher l'utilisateur courant
+   
+    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          user.department?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDepartment = !selectedDepartment || user.department === selectedDepartment;
+   
+    return matchesSearch && matchesDepartment;
+  });
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
@@ -112,150 +117,286 @@ export default function Directory() {
   );
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
      
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ color: '#E2E8F0', fontSize: '28px', marginBottom: '8px' }}>
-          👥 Annuaire des membres
-        </h1>
-        <p style={{ color: '#64748B' }}>
-          {filteredUsers.length} membres trouvés
-        </p>
-      </div>
+      {/* Message de notification */}
+      {followMessage.show && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          padding: '12px 24px',
+          borderRadius: '12px',
+          background: followMessage.type === 'success' ? '#10B981' : '#EF4444',
+          color: 'white',
+          fontWeight: '600',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          animation: 'slideDown 0.3s ease',
+        }}>
+          {followMessage.text}
+        </div>
+      )}
 
+      {/* Section Suggestions */}
+      {suggestions.length > 0 && (
+        <div style={{
+          background: '#181C27',
+          border: '1px solid #2A2F45',
+          borderRadius: '16px',
+          padding: '20px',
+          marginBottom: '24px',
+        }}>
+          <h3 style={{ color: '#E2E8F0', fontSize: '18px', margin: '0 0 16px 0' }}>
+            👥 Suggestions - Personnes à suivre
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
+            {suggestions.map(user => (
+              <div key={user._id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '12px',
+                  background: '#1E2336',
+                  borderRadius: '12px',
+                }}>
+                <div
+                  onClick={() => navigate(`/profile/${user._id}`)}
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '12px',
+                    background: COLORS[(user.name?.charCodeAt(0) || 0) % COLORS.length],
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontWeight: '700',
+                    fontSize: '20px',
+                    cursor: 'pointer',
+                  }}>
+                  {user.name?.[0]?.toUpperCase()}
+                </div>
+                <div style={{ flex: 1 }} onClick={() => navigate(`/profile/${user._id}`)}>
+                  <p style={{ color: '#E2E8F0', fontWeight: '600', fontSize: '15px', margin: 0, cursor: 'pointer' }}>
+                    {user.name}
+                  </p>
+                  {user.department && (
+                    <p style={{ color: '#64748B', fontSize: '12px', margin: '5px 0 0 0' }}>
+                      🏢 {user.department}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleFollow(user._id, user.name)}
+                  style={{
+                    padding: '6px 16px',
+                    borderRadius: '20px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg,#4F8EF7,#A78BFA)',
+                    color: 'white',
+                    fontWeight: '600',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s',
+                  }}
+                  onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                  onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}>
+                  Suivre
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Annuaire des membres */}
       <div style={{
-        background: '#181C27', border: '1px solid #2A2F45',
-        borderRadius: '16px', padding: '20px',
-        marginBottom: '24px',
+        background: '#181C27',
+        border: '1px solid #2A2F45',
+        borderRadius: '16px',
+        overflow: 'hidden',
       }}>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        {/* En-tête */}
+        <div style={{
+          padding: '20px',
+          borderBottom: '1px solid #2A2F45',
+          background: 'linear-gradient(135deg, rgba(79,142,247,0.1), rgba(167,139,250,0.1))',
+        }}>
+          <h2 style={{ color: '#E2E8F0', fontSize: '24px', margin: '0 0 8px 0' }}>
+            👥 Annuaire des membres
+          </h2>
+          <p style={{ color: '#64748B', fontSize: '14px', margin: 0 }}>
+            {filteredUsers.length} membre{filteredUsers.length > 1 ? 's' : ''} trouvé{filteredUsers.length > 1 ? 's' : ''}
+          </p>
+        </div>
+
+        {/* Filtres */}
+        <div style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid #2A2F45',
+          display: 'flex',
+          gap: '12px',
+          flexWrap: 'wrap',
+        }}>
           <input
             type="text"
-            placeholder="🔍 Rechercher un membre..."
+            placeholder="🔍 Rechercher par nom ou département..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
-              flex: 2,
-              padding: '12px 16px',
+              flex: 1,
+              minWidth: '200px',
+              padding: '10px 14px',
               background: '#1E2336',
               border: '1px solid #2A2F45',
-              borderRadius: '12px',
+              borderRadius: '10px',
               color: '#E2E8F0',
               fontSize: '14px',
-              outline: 'none',
             }}
           />
-         
           <select
             value={selectedDepartment}
             onChange={(e) => setSelectedDepartment(e.target.value)}
             style={{
-              flex: 1,
-              padding: '12px 16px',
+              padding: '10px 14px',
               background: '#1E2336',
               border: '1px solid #2A2F45',
-              borderRadius: '12px',
+              borderRadius: '10px',
               color: '#E2E8F0',
               fontSize: '14px',
               cursor: 'pointer',
-            }}
-          >
+            }}>
+            <option value="">Tous les départements</option>
             {DEPARTMENTS.map(dept => (
-              <option key={dept} value={dept}>{dept === 'Tous' ? '📌 Tous les départements' : `🏢 ${dept}`}</option>
+              <option key={dept} value={dept}>{dept}</option>
             ))}
           </select>
         </div>
-      </div>
 
-      <div style={{
-        background: '#181C27', border: '1px solid #2A2F45',
-        borderRadius: '16px', overflow: 'hidden',
-      }}>
-        {filteredUsers.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#64748B' }}>
-            Aucun membre trouvé
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {filteredUsers.map((user, index) => {
-              const color = COLORS[(user.name?.charCodeAt(0) || 0) % COLORS.length];
-              const isFollowing = followStatus[user._id];
-             
-              return (
+        {/* Liste des membres */}
+        <div style={{ padding: '20px' }}>
+          {filteredUsers.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px', color: '#64748B' }}>
+              Aucun membre trouvé
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              {filteredUsers.map((user, index) => (
                 <div
                   key={user._id}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '16px',
-                    padding: '16px 20px',
-                    borderBottom: index < filteredUsers.length - 1 ? '1px solid #2A2F45' : 'none',
-                    transition: 'background 0.2s',
+                    background: '#1E2336',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
                     cursor: 'pointer',
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#1E2336'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <div
-                    onClick={() => navigate(`/profile/${user._id}`)}
-                    style={{
-                      width: '56px', height: '56px', borderRadius: '50%',
-                      background: user.avatar ? 'transparent' : color,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '24px', fontWeight: 'bold', color: 'white',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {user.avatar ? (
-                      <img src={`${API.replace('/api', '')}${user.avatar}`} alt=""
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      user.name?.[0]?.toUpperCase()
-                    )}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div
+                      onClick={() => navigate(`/profile/${user._id}`)}
+                      style={{
+                        width: '56px',
+                        height: '56px',
+                        borderRadius: '12px',
+                        background: COLORS[index % COLORS.length],
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontWeight: '700',
+                        fontSize: '24px',
+                      }}>
+                      {user.name?.[0]?.toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3
+                        onClick={() => navigate(`/profile/${user._id}`)}
+                        style={{ color: '#E2E8F0', fontSize: '16px', fontWeight: '600', margin: '0 0 4px 0' }}>
+                        {user.name}
+                      </h3>
+                      {user.department && (
+                        <p style={{ color: '#4F8EF7', fontSize: '12px', margin: 0 }}>
+                          🏢 {user.department}
+                        </p>
+                      )}
+                    </div>
                   </div>
                  
-                  <div style={{ flex: 1 }} onClick={() => navigate(`/profile/${user._id}`)}>
-                    <h3 style={{ color: '#E2E8F0', fontSize: '16px', fontWeight: '600', margin: 0 }}>
-                      {user.name}
-                    </h3>
-                    {user.department && (
-                      <p style={{ color: '#4F8EF7', fontSize: '13px', margin: '4px 0 0' }}>
-                        🏢 {user.department}
-                      </p>
-                    )}
-                    {user.bio && (
-                      <p style={{ color: '#64748B', fontSize: '12px', margin: '4px 0 0' }}>
-                        {user.bio.substring(0, 60)}...
-                      </p>
-                    )}
-                  </div>
+                  {user.bio && (
+                    <p style={{ color: '#64748B', fontSize: '12px', margin: '0 0 12px 0', lineHeight: '1.4' }}>
+                      {user.bio.length > 80 ? user.bio.substring(0, 80) + '...' : user.bio}
+                    </p>
+                  )}
                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFollow(user._id, user.name);
-                    }}
-                    style={{
-                      padding: '8px 20px',
-                      borderRadius: '25px',
-                      border: 'none',
-                      background: isFollowing ? '#1E2336' : 'linear-gradient(135deg,#4F8EF7,#A78BFA)',
-                      color: isFollowing ? '#64748B' : 'white',
-                      fontWeight: '600',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      Border: isFollowing ? '1px solid #2A2F45' : 'none',
-                      transition: 'transform 0.2s',
-                    }}
-                    onMouseEnter={e => e.target.style.transform = 'scale(1.05)'}
-                    onMouseLeave={e => e.target.style.transform = 'scale(1)'}
-                  >
-                    {isFollowing ? '✓ Suivi' : '+ Suivre'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/profile/${user._id}`);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '6px 12px',
+                        background: 'transparent',
+                        border: '1px solid #4F8EF7',
+                        borderRadius: '8px',
+                        color: '#4F8EF7',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                      }}>
+                      Voir profil
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFollow(user._id, user.name);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '6px 12px',
+                        border: 'none',
+                        borderRadius: '8px',
+                        background: followingIds.includes(user._id) ? '#1E2336' : 'linear-gradient(135deg,#4F8EF7,#A78BFA)',
+                        color: followingIds.includes(user._id) ? '#64748B' : 'white',
+                        Border: followingIds.includes(user._id) ? '1px solid #2A2F45' : 'none',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                      }}>
+                      {followingIds.includes(user._id) ? '✓ Suivi' : '+ Suivre'}
+                    </button>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 const getRoomId = (userId1, userId2) => {
   // Trier les deux IDs pour avoir toujours le même résultat
   const sorted = [userId1.toString(), userId2.toString()].sort();
+  console.log("ROOM FUNCTION LOADED")
   return `conv_${sorted[0]}_${sorted[1]}`;
 };
 

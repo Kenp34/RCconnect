@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -28,8 +28,6 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState('posts');
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [editSuccess, setEditSuccess] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [followMessage, setFollowMessage] = useState({ show: false, text: '', type: '' });
 
   const isMe = !id || id === me?._id;
@@ -61,13 +59,14 @@ export default function Profile() {
         }
 
         const userId = isMe ? me?._id : id;
-        try {
-          const { data: userPosts } = await axios.get(`${API}/posts/user/${userId}`, axiosConfig);
-          console.log("📝 Posts chargés:", userPosts?.length);
-          setPosts(userPosts || []);
-        } catch (postErr) {
-          console.error("Erreur chargement posts:", postErr);
-          setPosts([]);
+        if (userId) {
+          try {
+            const { data: userPosts } = await axios.get(`${API}/posts/user/${userId}`, axiosConfig);
+            setPosts(userPosts || []);
+          } catch (postErr) {
+            console.error("Erreur chargement posts:", postErr);
+            setPosts([]);
+          }
         }
 
       } catch (err) {
@@ -83,46 +82,25 @@ export default function Profile() {
     }
   }, [id, me?._id, isMe, token]);
 
-  // Récupérer les suggestions
-  useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!profile || !me) return;
-      setLoadingSuggestions(true);
-      try {
-        const { data: allUsers } = await axios.get(`${API}/users`, axiosConfig);
-        const followingIds = profile.following?.map(f => f._id) || [];
-        const filteredSuggestions = allUsers.filter(user =>
-          user._id !== me._id && !followingIds.includes(user._id)
-        ).slice(0, 5);
-        setSuggestions(filteredSuggestions);
-      } catch (error) {
-        console.error("Erreur suggestions:", error);
-      } finally {
-        setLoadingSuggestions(false);
-      }
-    };
-
-    if (isMe && profile && me) {
-      fetchSuggestions();
-    }
-  }, [isMe, profile, me, token]);
-
   // Follow / Unfollow
   const handleFollow = async () => {
-    if (!id) return;
+    if (!id || !me) return;
     try {
       const { data } = await axios.post(`${API}/users/${id}/follow`, {}, axiosConfig);
       setIsFollowing(data.following);
 
-      setProfile(prev => ({
-        ...prev,
-        followers: data.following
-          ? [...(prev.followers || []), { _id: me._id, name: me.name, avatar: me.avatar }]
-          : (prev.followers || []).filter(
-              f => (f._id || f).toString() !== me._id.toString()
-            ),
-      }));
-     
+      setProfile(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          followers: data.following
+            ? [...(prev.followers || []), { _id: me._id, name: me.name, avatar: me.avatar }]
+            : (prev.followers || []).filter(
+                f => (f._id || f).toString() !== me._id.toString()
+              ),
+        };
+      });
+    
       showMessage(data.following ? `✅ Vous suivez maintenant ${profile?.name}` : `❌ Vous ne suivez plus ${profile?.name}`);
     } catch (err) {
       console.error('Erreur follow:', err);
@@ -334,85 +312,6 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Section Suggestions */}
-      {isMe && loadingSuggestions && (
-        <div style={{ textAlign: 'center', padding: '20px', color: '#64748B' }}>
-          Chargement des suggestions...
-        </div>
-      )}
-
-      {isMe && !loadingSuggestions && suggestions.length > 0 && (
-        <div style={{
-          background: '#181C27', border: '1px solid #2A2F45',
-          borderRadius: '16px', padding: '20px',
-          marginBottom: '20px',
-        }}>
-          <h3 style={{ color: '#E2E8F0', fontSize: '16px', margin: '0 0 16px 0' }}>
-            👥 Suggestions - Personnes à suivre
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {suggestions.map(user => (
-              <div key={user._id}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: '12px', background: '#1E2336',
-                  borderRadius: '12px',
-                }}>
-                <div
-                  onClick={() => navigate(`/profile/${user._id}`)}
-                  style={{
-                    width: '44px', height: '44px', borderRadius: '12px',
-                    background: COLORS[(user.name?.charCodeAt(0) || 0) % COLORS.length],
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'white', fontWeight: '700', fontSize: '18px',
-                    cursor: 'pointer',
-                  }}>{user.name?.[0]?.toUpperCase()}</div>
-                <div style={{ flex: 1 }} onClick={() => navigate(`/profile/${user._id}`)}>
-                  <p style={{ color: '#E2E8F0', fontWeight: '600', fontSize: '14px', margin: 0, cursor: 'pointer' }}>{user.name}</p>
-                  {user.department && <p style={{ color: '#64748B', fontSize: '12px', margin: 0 }}>{user.department}</p>}
-                </div>
-                <button
-                  onClick={async () => {
-                    try {
-                      await axios.post(`${API}/users/${user._id}/follow`, {}, axiosConfig);
-                      setSuggestions(prev => prev.filter(u => u._id !== user._id));
-                      showMessage(`✅ Vous suivez maintenant ${user.name}`, 'success');
-                    } catch (err) {
-                      console.error('Erreur follow:', err);
-                      showMessage(err.response?.data?.message || 'Erreur', 'error');
-                    }
-                  }}
-                  style={{
-                    padding: '6px 16px', borderRadius: '20px', border: 'none',
-                    background: 'linear-gradient(135deg,#4F8EF7,#A78BFA)',
-                    color: 'white', fontWeight: '600', fontSize: '12px',
-                    cursor: 'pointer',
-                  }}>
-                  Suivre
-                </button>
-              </div>
-            ))}
-          </div>
-          <div style={{ textAlign: 'center', marginTop: '16px' }}>
-            <button
-              onClick={() => navigate('/directory')}
-              style={{
-                padding: '8px 16px',
-                background: 'transparent',
-                border: '1px solid #4F8EF7',
-                borderRadius: '10px',
-                color: '#4F8EF7',
-                fontSize: '13px',
-                fontWeight: '500',
-                cursor: 'pointer',
-              }}
-            >
-              👥 Voir tous les membres
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Onglets */}
       <div style={{
         display: 'flex', gap: '6px',
@@ -486,7 +385,7 @@ export default function Profile() {
                 ✏️ Créer une publication
               </button>
             )}
-           
+          
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {posts.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px' }}>
