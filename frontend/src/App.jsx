@@ -8,6 +8,7 @@ import Feed from './pages/Feed';
 import Profile from './pages/Profile';
 import Message from './pages/Message';
 import Directory from './pages/Directory';
+
 import './index.css';
 
 export default function App() {
@@ -18,7 +19,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={<Navigate to="/feed" replace />} />
-         
+
           <Route path="/feed" element={
             <ProtectedRoute>
               <Layout>
@@ -26,7 +27,7 @@ export default function App() {
               </Layout>
             </ProtectedRoute>
           } />
-         
+
           <Route path="/profile/:id" element={
             <ProtectedRoute>
               <Layout>
@@ -34,7 +35,7 @@ export default function App() {
               </Layout>
             </ProtectedRoute>
           } />
-         
+
           <Route path="/profile/me" element={
             <ProtectedRoute>
               <Layout>
@@ -43,25 +44,55 @@ export default function App() {
             </ProtectedRoute>
           } />
 
-            <Route path="/messages" element={
+          <Route path="/messages" element={
             <ProtectedRoute>
               <Layout>
-                <Message/>
+                <Message />
               </Layout>
             </ProtectedRoute>
           } />
 
+          
+
           <Route path="/annuaire" element={
             <ProtectedRoute>
               <Layout>
-                <Directory/>
+                <Directory />
               </Layout>
             </ProtectedRoute>
           } />
         </Routes>
 
-       
+
       </BrowserRouter>
     </AuthProvider>
   );
 }
+
+
+/*!SECTION
+
+
+import Notifications from './pages/Notifications';
+import GroupPage     from './pages/GroupPage';
+import Groups        from './pages/Groups';
+
+// Dans les Routes
+<Route path="/notifications" element={
+  <ProtectedRoute>
+    <Layout><Notifications /></Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/groups" element={
+  <ProtectedRoute>
+    <Layout><Groups /></Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/groups/:id" element={
+  <ProtectedRoute>
+    <Layout><GroupPage /></Layout>
+  </ProtectedRoute>
+} />
+*/

@@ -24,7 +24,11 @@ export default function ChatArea({
 }) {
   const messagesEndRef = useRef(null);
 
+  // ✅ AJOUTEZ CE LOG
+  console.log('💬 ChatArea - messages reçus:', messages.length, messages);
+
   useEffect(() => {
+    console.log('📜 Scroll vers le bas');
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -81,19 +85,23 @@ export default function ChatArea({
           </div>
         ) : (
           <>
-            {messages.map((message, index) => (
-              <MessageBubble
-                key={message._id || index}
-                message={message}
-                isOwn={
-                  message.sender?._id === currentUser._id ||
-                  message.sender === currentUser._id
-                }
-                currentUser={currentUser}
-                onDelete={onDeleteMessage}
-                onEdit={onEditMessage}
-              />
-            ))}
+            {messages.map((message, index) => {
+              // ✅ AJOUTEZ CE LOG
+              console.log('🎨 Rendu du message:', message._id, message.content);
+              return (
+                <MessageBubble
+                  key={message._id || index}
+                  message={message}
+                  isOwn={
+                    message.sender?._id === currentUser._id ||
+                    message.sender === currentUser._id
+                  }
+                  currentUser={currentUser}
+                  onDelete={onDeleteMessage}
+                  onEdit={onEditMessage}
+                />
+              );
+            })}
 
             {/* Indicateur de frappe */}
             {typingUser && (

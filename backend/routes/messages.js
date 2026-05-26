@@ -83,17 +83,31 @@ router.post('/', protect, async (req, res) => {
     await message.populate('sender', 'name avatar');
     await message.populate('recipient', 'name avatar');
 
+
     // Émettre via Socket.io
     const io = req.app.get('io');
-    io.to(roomId).emit('newMessage', message);
-
-    // Notification pour le destinataire
     io.to(`user_${recipientId}`).emit('newNotification', {
+      _id: notification._id,
       type: 'message',
       sender: { _id: req.user._id, name: req.user.name, avatar: req.user.avatar },
-      content: content.trim().substring(0, 100),
-      messageId: message._id
+      message: content.trim().substring(0, 100),
+      createdAt: notification.createdAt,
+      read: false
     });
+
+    // Ajouter dans le POST /api/messages après création du message
+    const Notification = require('../models/Notification');
+
+    // Créer une notification pour le destinataire
+    const notification = await Notification.create({
+      recipient: recipientId,
+      sender: req.user._id,
+      type: 'message',
+      message: content.trim().substring(0, 100),
+      metadata: { messageId: message._id, roomId }
+    });
+
+    
 
     res.status(201).json(message);
   } catch (err) {

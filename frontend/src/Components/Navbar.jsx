@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import styles from './Css/Navbar.module.css';
+import NotificationBell from './NotificationBell';
+
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -32,14 +34,16 @@ export default function Navbar() {
       </div>
 
       <div className={styles.rightSection}>
-        <Link to="/notifications" className={styles.iconBtn}>
-          🔔
-          <span className={styles.badge}>3</span>
-        </Link>
+       
+      
+
+        <NotificationBell />
+  
+
 
         <Link to="/messages" className={styles.iconBtn}>
           💬
-          <span className={styles.badge}>5</span>
+          {/* <span className={styles.badge}>5</span> */}
         </Link>
 
         <Link to={`/profile/${user?._id}`} className={styles.profileBtn}>
@@ -50,9 +54,9 @@ export default function Navbar() {
             {user?.name?.split(' ')[0]}
           </span>
         </Link>
-
+     
         <button onClick={handleLogout} className={styles.logoutBtn}>
-          ⎋
+          ⎋ Logout
         </button>
       </div>
     </nav>

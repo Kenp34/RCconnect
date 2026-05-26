@@ -24,7 +24,7 @@ router.get('/me', protect, async (req, res) => {
       .select('-password')
       .populate('following', 'name avatar')
       .populate('followers', 'name avatar');
-   
+
     if (!user) return res.status(404).json({ message: 'Utilisateur introuvable' });
     res.json(user);
   } catch (err) {
@@ -82,25 +82,49 @@ router.post('/:id/follow', protect, async (req, res) => {
     if (req.params.id === req.user._id.toString()) {
       return res.status(400).json({ message: "Auto-follow interdit" });
     }
-   
+
     const target = await User.findById(req.params.id);
     const me = await User.findById(req.user._id);
-   
+
     if (!target || !me) {
       return res.status(404).json({ message: "Utilisateur introuvable" });
     }
-   
+
     const isFollowing = me.following.includes(target._id);
-   
+
     if (isFollowing) {
       me.following.pull(target._id);
       target.followers.pull(me._id);
       await me.save();
       await target.save();
       return res.json({ message: "Utilisateur désabonné", following: false });
-    } else {
+    }
+
+    else {
       me.following.push(target._id);
       target.followers.push(me._id);
+
+      // Créer une notification
+      const Notification = require('../models/Notification');
+      const notification = await Notification.create({
+        recipient: target._id,
+        sender: req.user._id,
+        type: 'follow',
+        message: `${req.user.name} a commencé à vous suivre`
+      });
+
+      // Émettre via Socket.io
+      const io = req.app.get('io');
+      io.to(`user_${target._id}`).emit('newNotification', {
+        _id: notification._id,
+        type: 'follow',
+        sender: { _id: req.user._id, name: req.user.name, avatar: req.user.avatar },
+        message: notification.message,
+        createdAt: notification.createdAt,
+        read: false
+      });
+
+
       await me.save();
       await target.save();
       return res.json({ message: "Utilisateur suivi", following: true });
