@@ -1,48 +1,55 @@
 .conversationList {
-  width: 320px;
-  background: #f8f9fa;
-  border-right: 1px solid #e9ecef;
+  width: 300px;
+  min-width: 300px;
+  background: #181C27;
+  border-right: 1px solid #2A2F45;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
 .header {
-  padding: 20px;
-  background: white;
-  border-bottom: 1px solid #e9ecef;
+  padding: 16px;
+  border-bottom: 1px solid #2A2F45;
 }
 
-.header h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #2d3748;
-  margin-bottom: 12px;
+.title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #E2E8F0;
+  margin-bottom: 10px;
 }
 
 .searchBox {
   position: relative;
 }
 
-.searchBox input {
-  width: 100%;
-  padding: 10px 36px 10px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 14px;
-}
-
-.searchBox input:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
 .searchIcon {
   position: absolute;
-  right: 12px;
+  left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: #a0aec0;
+  font-size: 13px;
+}
+
+.searchInput {
+  width: 100%;
+  background: #1E2336;
+  border: 1px solid #2A2F45;
+  border-radius: 10px;
+  padding: 8px 12px 8px 32px;
+  color: #E2E8F0;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  border-color: #4F8EF7;
+}
+
+.searchInput::placeholder {
+  color: #64748B;
 }
 
 .conversations {
@@ -50,115 +57,146 @@
   overflow-y: auto;
 }
 
-.emptyConversations {
-  text-align: center;
-  padding: 60px 20px;
-  color: #a0aec0;
+.conversations::-webkit-scrollbar {
+  width: 3px;
 }
 
-.emptyConversations span {
-  font-size: 48px;
-  display: block;
-  margin-bottom: 16px;
+.conversations::-webkit-scrollbar-thumb {
+  background: #2A2F45;
+  border-radius: 3px;
 }
 
-.emptyConversations p {
-  font-size: 16px;
-  color: #718096;
+.sectionLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 12px 16px 4px;
 }
 
 .conversationItem {
   display: flex;
-  gap: 12px;
-  padding: 16px 20px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
   cursor: pointer;
-  transition: all 0.2s;
-  border-bottom: 1px solid #e9ecef;
+  transition: background 0.15s;
+  border-bottom: 1px solid rgba(42, 47, 69, 0.5);
 }
 
 .conversationItem:hover {
-  background: #f1f3f5;
+  background: #1E2336;
 }
 
-.conversationItem.active {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
-  border-left: 3px solid #667eea;
+.active {
+  background: rgba(79, 142, 247, 0.08);
+  border-left: 3px solid #4F8EF7;
 }
 
-.avatar {
+.avatarWrapper {
   position: relative;
-  width: 48px;
-  height: 48px;
   flex-shrink: 0;
 }
 
-.avatar img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
+.avatarImg {
+
+
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   object-fit: cover;
 }
 
 .avatarPlaceholder {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2A2F45, #1E2336);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: 600;
-  font-size: 20px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #E2E8F0;
 }
 
-.unreadBadge {
+.unreadDot {
   position: absolute;
-  bottom: -2px;
+  top: -2px;
   right: -2px;
-  background: #e53e3e;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
+  background: #4F8EF7;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid #181C27;
 }
 
-.conversationInfo {
+.convInfo {
   flex: 1;
   min-width: 0;
 }
 
-.conversationHeader {
+.convTop {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
-.conversationHeader h3 {
-  font-size: 15px;
-  font-weight: 600;
-  color: #2d3748;
-  margin: 0;
-}
-
-.time {
-  font-size: 11px;
-  color: #a0aec0;
-}
-
-.lastMessage {
+.convName {
   font-size: 13px;
-  color: #718096;
-  margin: 0;
+  font-weight: 600;
+  color: #E2E8F0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-@media (max-width: 768px) {
-  .conversationList {
-    width: 100%;
-    height: 300px;
-  }
+.convTime {
+  font-size: 10px;
+  color: #64748B;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.newBadge {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(79, 142, 247, 0.15);
+  color: #4F8EF7;
+  padding: 2px 6px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.lastMessage {
+  font-size: 12px;
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748B;
+}
+
+.emptyIcon {
+  font-size: 36px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.empty p {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #94A3B8;
+}
+
+.empty small {
+  font-size: 12px;
 }
