@@ -1,0 +1,72 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+    background: #0F1117;
+    min-height: calc(100vh - 64px);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.header h1 {
+    font-size: 28px;
+    color: #E2E8F0;
+}
+
+.createBtn {
+    background: linear-gradient(135deg, #4F8EF7, #A78BFA);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid #2A2F45;
+    margin-bottom: 20px;
+}
+
+.tab {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    color: #64748B;
+    cursor: pointer;
+}
+
+.tab.active {
+    color: #4F8EF7;
+    border-bottom: 2px solid #4F8EF7;
+}
+
+.search {
+    width: 100%;
+    max-width: 400px;
+    background: #1E2336;
+    border: 1px solid #2A2F45;
+    border-radius: 10px;
+    padding: 10px 16px;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.loading,
+.empty {
+    text-align: center;
+    padding: 60px;
+    color: #64748B;
+}
