@@ -18,6 +18,7 @@ export default function Messages() {
   const [typingUser, setTypingUser] = useState(null);
 
   const { joinRoom, sendMessage, sendTyping, registerCallbacks } = useSocket();
+  
 
   // Mettre à jour la liste des conversations
   const updateConversationLastMessage = useCallback((message) => {

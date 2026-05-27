@@ -8,9 +8,11 @@ import Feed from './pages/Feed';
 import Profile from './pages/Profile';
 import Message from './pages/Message';
 import Directory from './pages/Directory';
-import Groups from './pages/Group';
-import GroupDetail from './pages/GroupDetail';
-import Notifications from './pages/Notification';
+import Group from './pages/Group';
+import GroupChat from './pages/GroupChat';
+
+
+// Ajouter dans les route
 
 import './index.css';
 
@@ -19,12 +21,10 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Routes publiques */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={<Navigate to="/feed" replace />} />
 
-          {/* Routes protégées avec Layout */}
           <Route path="/feed" element={
             <ProtectedRoute>
               <Layout>
@@ -57,6 +57,8 @@ export default function App() {
             </ProtectedRoute>
           } />
 
+
+
           <Route path="/annuaire" element={
             <ProtectedRoute>
               <Layout>
@@ -65,36 +67,59 @@ export default function App() {
             </ProtectedRoute>
           } />
 
-          {/* Route notifications */}
-          <Route path="/notifications" element={
-            <ProtectedRoute>
-              <Layout>
-                <Notifications />
-              </Layout>
-            </ProtectedRoute>
-          } />
-
-          {/* Routes groupes */}
+          {/* 👥 ROUTES POUR LES GROUPES */}
           <Route path="/groups" element={
             <ProtectedRoute>
               <Layout>
-                <Groups />
+                <Group />
               </Layout>
             </ProtectedRoute>
           } />
-
+          
+         {/* 👥 ROUTES POUR LES GROUPES */}
           <Route path="/groups/:id" element={
             <ProtectedRoute>
               <Layout>
-                <GroupDetail />
+                <GroupChat />
               </Layout>
             </ProtectedRoute>
           } />
 
-          {/* Fallback - route 404 */}
+          {/* Redirection 404 */}
           <Route path="*" element={<Navigate to="/feed" replace />} />
         </Routes>
+
+
+         
       </BrowserRouter>
     </AuthProvider>
   );
 }
+
+
+/*!SECTION
+
+
+import Notifications from './pages/Notifications';
+import GroupPage     from './pages/GroupPage';
+import Groups        from './pages/Groups';
+
+// Dans les Routes
+<Route path="/notifications" element={
+  <ProtectedRoute>
+    <Layout><Notifications /></Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/groups" element={
+  <ProtectedRoute>
+    <Layout><Groups /></Layout>
+  </ProtectedRoute>
+} />
+
+<Route path="/groups/:id" element={
+  <ProtectedRoute>
+    <Layout><GroupPage /></Layout>
+  </ProtectedRoute>
+} />
+*/

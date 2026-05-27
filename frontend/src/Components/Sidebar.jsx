@@ -10,7 +10,6 @@ const menuItems = [
   { icon: '🏠', label: 'Fil d\'actualité', path: '/feed' },
   { icon: '👤', label: 'Mon profil', path: '/profile/me' },
   { icon: '💬', label: 'Messages', path: '/messages' },
-  { icon: '🔔', label: 'Notifications', path: '/notifications' },
   { icon: '👥', label: 'Annuaire', path: '/annuaire' },
   { icon: '👥', label: 'Groupes', path: '/groups' },
 ];
@@ -95,7 +94,7 @@ export default function Sidebar() {
           <div className={styles.noGroups}>
             <span>👥</span>
             <p>Aucun groupe</p>
-            <Link to="/groups">Rejoindre un groupe</Link>
+            <Link to="/groups/id">Rejoindre un groupe</Link>
           </div>
         ) : (
           <ul className={styles.groupsList}>
@@ -131,9 +130,6 @@ export default function Sidebar() {
 
       {/* Bottom section */}
       <div className={styles.bottomSection}>
-        <Link to="/parametres" className={styles.bottomLink}>
-          <span>⚙️</span> Paramètres
-        </Link>
         <button onClick={logout} className={styles.logoutButton}>
           <span>⎋</span> Déconnexion
         </button>
