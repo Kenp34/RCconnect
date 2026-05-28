@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { protect } = require('../middleware/auth');
 const Post = require('../models/Post');
-const upload=require('../middleware/Upload');
+const upload=require('../middleware/upload');
 
 
 // GET /api/posts/user/:userId - Récupérer les posts d'un utilisateur
