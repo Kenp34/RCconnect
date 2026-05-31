@@ -12,13 +12,21 @@ const server = http.createServer(app);
 // Configuration Socket.io
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: process.env.CLIENT_URL || 'https://rcconnect237-pv5i.vercel.app/',
     methods: ['GET', 'POST']
   }
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin:process.env.CLIENT_URL || 'https://rcconnect237-pv5i.vercel.app/' ,
+  credentials:true
+}));
+
+app.get('/',(req,res) =>{
+   res.json({message: 'RCconnect API'})
+}
+
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -40,7 +48,7 @@ require('./socket/index')(io);
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     server.listen(5001, () => {
-      console.log('✅ Serveur démarré sur http://localhost:5001');
+      console.log('✅ Serveur démarré sur http://localhost:5001',process.env.MONGODB_URI);
     });
   })
   .catch(err => console.error('❌ Erreur MongoDB:', err));
