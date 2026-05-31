@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import Layout from './components/Layout';
+import ProtectedRoute from './Components/ProtectedRoute';
+import Layout from './Components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Feed from './pages/Feed';
@@ -97,29 +97,4 @@ export default function App() {
 }
 
 
-/*!SECTION
 
-
-import Notifications from './pages/Notifications';
-import GroupPage     from './pages/GroupPage';
-import Groups        from './pages/Groups';
-
-// Dans les Routes
-<Route path="/notifications" element={
-  <ProtectedRoute>
-    <Layout><Notifications /></Layout>
-  </ProtectedRoute>
-} />
-
-<Route path="/groups" element={
-  <ProtectedRoute>
-    <Layout><Groups /></Layout>
-  </ProtectedRoute>
-} />
-
-<Route path="/groups/:id" element={
-  <ProtectedRoute>
-    <Layout><GroupPage /></Layout>
-  </ProtectedRoute>
-} />
-*/
