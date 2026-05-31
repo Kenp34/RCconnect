@@ -12,15 +12,21 @@ const server = http.createServer(app);
 // Configuration Socket.io
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'https://rcconnect237-pv5i.vercel.app/',
+    origin: /vercel\.app$/,
     methods: ['GET', 'POST']
   }
 });
 
 // Middleware
 app.use(cors({
-  origin:process.env.CLIENT_URL || 'https://rcconnect237-pv5i.vercel.app/' ,
-  credentials:true
+  origin: function(origin, callback) {
+    if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true
 }));
 
 app.get('/',(req , res) => {
