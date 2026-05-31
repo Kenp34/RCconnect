@@ -23,8 +23,8 @@ app.use(cors({
   credentials:true
 }));
 
-app.get('/',(req,res) =>{
-   res.json({message: 'RCconnect API'})
+app.get('/',(req , res) => {
+   res.json({ message: 'RCconnect API'});
 }
 
 app.use(express.json());
