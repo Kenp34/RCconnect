@@ -36,6 +36,7 @@ app.use('/api/groups', require('./routes/groups'));
 // Socket.io
 require('./socket/index')(io);
 
+
 // Connexion MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
@@ -44,3 +45,4 @@ mongoose.connect(process.env.MONGODB_URI)
     });
   })
   .catch(err => console.error('❌ Erreur MongoDB:', err));
+

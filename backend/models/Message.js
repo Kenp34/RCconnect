@@ -5,7 +5,10 @@ const MessageSchema = new mongoose.Schema({
   recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   content: { type: String, required: true, maxlength: 1000 },
   room: { type: String, required: true },
+  //replier un message
+  replyTo: {    type: mongoose.Schema.Types.ObjectId,    ref: 'Message',    default: null  },
   read: { type: Boolean, default: false },
+
   // Champs pour modification/suppression
   edited: { type: Boolean, default: false },
   editedAt: { type: Date },

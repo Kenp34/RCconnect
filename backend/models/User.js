@@ -5,7 +5,18 @@ const bcrypt = require('bcryptjs');
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true },
-    password: { type: String, required: true, minlength: 6 },
+    password: {
+        type: String,
+        required: true,
+        minlength: [8, 'Le mot de passe doit contenir au moins 8 caractères'],
+        validate: {
+            validator: function (v) {
+                // Au moins 1 majuscule, 1 minuscule, 1 chiffre
+                return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(v);
+            },
+            message: 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre'
+        }
+    },
     avatar: { type: String, default: null },  // chemin local
     bio: { type: String, maxlength: 500 },
     department: { type: String },                 // département/service

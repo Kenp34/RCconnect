@@ -43,62 +43,62 @@ router.get('/', protect, async (req, res) => {
 router.get('/:userId', protect, async (req, res) => {
   try {
     const roomId = getRoomId(req.user._id, req.params.userId);
-
     const messages = await Message.find({ room: roomId, deleted: { $ne: true } })
       .populate('sender', 'name avatar department')
+      .populate({
+        path: 'replyTo',
+        select: 'content sender deleted',
+        populate: { path: 'sender', select: 'name' }
+      })
       .sort({ createdAt: 1 })
       .limit(50);
-
     // Marquer les messages non lus comme lus
     await Message.updateMany(
       { room: roomId, recipient: req.user._id, read: false },
       { read: true }
     );
-
     res.json(messages);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+
 });
 
 
 // POST /api/messages - Envoyer un message
 router.post('/', protect, async (req, res) => {
   try {
-    const { recipientId, content } = req.body;
-
+    const { recipientId, content, replyTo } = req.body;
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ message: 'Message vide' });
     }
-
     const roomId = getRoomId(req.user._id, recipientId);
-
+    // Si c'est une réponse, vérifier que le message cité appartient à cette room
+    if (replyTo) {
+      const original = await Message.findOne({ _id: replyTo, room: roomId });
+      if (!original) {
+        return res.status(400).json({ message: "Message cité introuvable dans cette conversation" });
+      }
+    }
     const message = await Message.create({
       sender: req.user._id,
       recipient: recipientId,
       content: content.trim(),
-      room: roomId
+      room: roomId,
+      replyTo: replyTo || null
     });
-
     await message.populate('sender', 'name avatar');
     await message.populate('recipient', 'name avatar');
-
-
-    // Émettre via Socket.io
-    const io = req.app.get('io');
-    io.to(`user_${recipientId}`).emit('newNotification', {
-      _id: notification._id,
-      type: 'message',
-      sender: { _id: req.user._id, name: req.user.name, avatar: req.user.avatar },
-      message: content.trim().substring(0, 100),
-      createdAt: notification.createdAt,
-      read: false
+    await message.populate({
+      path: 'replyTo',
+      select: 'content sender deleted',
+      populate: { path: 'sender', select: 'name' }
     });
-
-    // Ajouter dans le POST /api/messages après création du message
+    // Émettre le message à toute la room (les deux utilisateurs)
+    const io = req.app.get('io');
+    io.to(roomId).emit('newMessage', message);
+    // Créer la notification AVANT de l'émettre
     const Notification = require('../models/Notification');
-
-    // Créer une notification pour le destinataire
     const notification = await Notification.create({
       recipient: recipientId,
       sender: req.user._id,
@@ -106,49 +106,47 @@ router.post('/', protect, async (req, res) => {
       message: content.trim().substring(0, 100),
       metadata: { messageId: message._id, roomId }
     });
-
-    
-
+    // Émettre la notification (nom d'événement unifié : 'notification')
+    io.to(`user_${recipientId}`).emit('notification', {
+      _id: notification._id,
+      type: 'message',
+      sender: { _id: req.user._id, name: req.user.name, avatar: req.user.avatar },
+      message: content.trim().substring(0, 100),
+      createdAt: notification.createdAt,
+      read: false
+    });
     res.status(201).json(message);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
+
 // PUT /api/messages/:id - MODIFIER un message
 router.put('/:id', protect, async (req, res) => {
   try {
     const { content } = req.body;
-
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ message: 'Le message ne peut pas être vide' });
     }
-
     if (content.length > 1000) {
       return res.status(400).json({ message: 'Message trop long (max 1000 caractères)' });
     }
 
     const message = await Message.findById(req.params.id);
+    if (!message) return res.status(404).json({ message: 'Message non trouvé' });
 
-    if (!message) {
-      return res.status(404).json({ message: 'Message non trouvé' });
-    }
-
-    // Vérifier que l'utilisateur est l'auteur
     if (message.sender.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Vous ne pouvez modifier que vos propres messages' });
     }
 
-    // Sauvegarder l'ancien contenu
     message.edited = true;
     message.editedAt = new Date();
     message.oldContent = message.content;
     message.content = content.trim();
-
     await message.save();
     await message.populate('sender', 'name avatar department');
 
-    // Émettre l'événement via Socket.io
     const io = req.app.get('io');
     io.to(message.room).emit('messageEdited', {
       messageId: message._id,
@@ -156,13 +154,11 @@ router.put('/:id', protect, async (req, res) => {
       edited: true,
       editedAt: message.editedAt
     });
-
     res.json(message);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-
 
 
 // DELETE /api/messages/:id - SUPPRIMER un message (soft delete)

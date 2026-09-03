@@ -2,7 +2,7 @@ const router = require('express').Router();
 const { protect } = require('../middleware/auth');
 const Post = require('../models/Post');
 const upload=require('../middleware/Upload');
-
+const PERMISSIONS = require('../config/permissions');
 
 // GET /api/posts/user/:userId - Récupérer les posts d'un utilisateur
 router.get('/user/:userId', protect, async (req, res) => {
@@ -59,12 +59,18 @@ router.delete('/:id', protect, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post introuvable' });
-    if (post.author.toString() !== req.user._id.toString())
+
+     const isOwner = post.author.toString() === req.user._id.toString();
+    const canDeleteOthers = PERMISSIONS[req.user.role]?.posts.deleteOthers;
+
+    if (!isOwner && !canDeleteOthers){
       return res.status(403).json({ message: 'Non autorisé' });
+    }
     await post.deleteOne();
     res.json({ message: 'Post supprimé' });
   } catch (err) { res.status(500).json({ message: err.message }); }
 })
+
 
 
 // POST /api/posts/:id/like - Liker/Unliker un post
@@ -131,7 +137,23 @@ router.post('/:id/comment', protect, async (req, res) => {
     await post.save();
    
     await post.populate('comments.user', 'name department avatar');
-   
+
+   // Créer une notification seulement si ce n'est pas son propre post
+      if (post.author._id.toString() !== req.user._id.toString()) {
+        const Notification = require('../models/Notification');
+        const notif = await Notification.create({
+          recipient: post.author._id,
+          sender:    req.user._id,
+          type:      'comment',
+          post:      post._id,
+          message:   `${req.user.name} a commenté votre publication`,
+        });
+
+        // Envoyer la notification en temps réel via Socket.io
+        const io = req.app.get('io');       
+         io.to(`user_${post.author._id}`).emit('notification', notif);
+      }
+
     const newComment = post.comments[post.comments.length - 1];
     res.status(201).json(newComment);
   } catch (err) {

@@ -272,4 +272,43 @@ router.post('/:id/follow', protect, async (req, res) => {
       fetchSuggestions();
     }
   }, [isMe, profile, me, token]);
+
+
+
+
+  const checkRole = require('../middleware/checkRole');
+  
+  // PUT /api/users/:id/deactivate - Désactiver un compte (modération)
+  router.put('/:id/deactivate', protect, checkRole('admin', 'manager'), async (req, res) => {
+    try {
+      const {isActive}=req.body;
+      if(typeof isActive!=='boolean'){
+        return res.status(400).json({message:'Le champ isActive (booléen) est requis'})
+      }
+      const user = await User.findByIdAndUpdate(req.params.id, { isActive}, { new: true }).select('-password');
+      //const user = await User.findByIdAndUpdate(req.params.id, { isActive: false}, { new: true }).select('-password');
+      if (!user) return res.status(404).json({ message: 'Utilisateur introuvable' });
+      res.json(user);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+  
+  
+  // Changer le rôle d'un utilisateur (admin uniquement)
+  router.put('/:id/role', protect, checkRole('admin'), async (req, res) => {
+    try {
+      const { role } = req.body;
+      const validRoles = ['employe', 'manager', 'admin'];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ message: 'Rôle invalide' });
+      }
+      const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true }).select('-password');
+      if (!user) return res.status(404).json({ message: 'Utilisateur introuvable' });
+      res.json(user);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+  
 */

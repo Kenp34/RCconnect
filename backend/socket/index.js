@@ -25,7 +25,7 @@ module.exports = (io) => {
   const activeUsers = new Map();
 
   io.on('connection', (socket) => {
-    console.log(`✅ Utilisateur connecté: ${socket.user.name}`);
+    //console.log(`✅ Utilisateur connecté: ${socket.user.name}`);
 
     activeUsers.set(socket.user._id.toString(), socket.id);
     socket.join(`user_${socket.user._id}`);
@@ -60,7 +60,7 @@ module.exports = (io) => {
         console.log(`📩 newMessage émis vers room: ${roomId}`);
 
         // ✅ Notification au destinataire
-        io.to(`user_${recipientId}`).emit('newNotification', {
+        io.to(`user_${recipientId}`).emit('notification', {
           type: 'message',
           sender: { _id: socket.user._id, name: socket.user.name, avatar: socket.user.avatar },
           message: `${socket.user.name} vous a envoyé un message`,
