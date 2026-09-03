@@ -309,3 +309,5 @@
 }
 .submitBtn:hover { opacity: 0.85; }
 .submitBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@media (max-width: 768px) {  .grid {    grid-template-columns: 1fr; /* Une colonne sur tablette/mobile */    gap: 10px;  }}@media (max-width: 480px) {  .card {    flex-direction: column;    align-items: stretch;    text-align: center;  }}

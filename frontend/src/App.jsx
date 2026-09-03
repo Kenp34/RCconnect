@@ -1,7 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+//import AdminRoute from './components/ProtectedRoute';
+//import ManageRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
+import AdminPanel from './pages/AdminPanel'
+import AdminLayout from './components/AdminLayout'; // ✅ Nouveau
+import Manager from './pages/Manager'
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Feed from './pages/Feed';
@@ -75,8 +80,8 @@ export default function App() {
               </Layout>
             </ProtectedRoute>
           } />
-          
-         {/* 👥 ROUTES POUR LES GROUPES */}
+
+          {/* 👥 ROUTES POUR LES GROUPES */}
           <Route path="/groups/:id" element={
             <ProtectedRoute>
               <Layout>
@@ -87,14 +92,40 @@ export default function App() {
 
           {/* Redirection 404 */}
           <Route path="*" element={<Navigate to="/feed" replace />} />
+
+   {/* ✅ Routes d'administration avec AdminLayout */}
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AdminPanel />} />
+           
+          </Route>
+
+{/* ✅ Routes d'administration avec AdminLayout */}
+          <Route path="/manager" element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Manager />} />
+           
+          </Route>
+          {/* <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} /> */}
+          {/* <Route path="/manager" element={<ManageRoute><Manager /></ManageRoute>} /> */}
         </Routes>
 
 
-         
+
       </BrowserRouter>
     </AuthProvider>
   );
 }
+
+
+
+
 
 
 /*!SECTION

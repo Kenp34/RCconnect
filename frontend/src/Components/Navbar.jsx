@@ -18,9 +18,31 @@ export default function Navbar() {
     <nav className={styles.navbar}>
       {/* Logo */}
       <Link to="/feed" className={styles.logo}>
-        <div className={styles.logoIcon}>EC</div>
-        <span className={styles.logoText}>EnterpriseConnect</span>
+        <div className={styles.logoIcon}>RC</div>
+        <span className={styles.logoText}>RCconnect</span>
       </Link>
+
+       
+      {user?.role === 'admin' && (
+        
+        <Link to="/admin" className={styles.navLink}>
+         <span className={styles.actionIcon}>⚙️</span>
+          <span className={styles.actionLabel}> Administration</span>
+       
+        </Link>
+
+   
+      )}
+
+      {user?.role === 'manager' && (
+        <Link to="/manager" className={styles.navLink}>
+        
+        
+         <span className={styles.actionIcon}>⚙️</span>
+          <span className={styles.actionLabel}>Administration - Manager</span>
+        
+        </Link>
+      )}
 
       {/* Barre de recherche */}
       <div className={styles.searchContainer}>
@@ -29,7 +51,7 @@ export default function Navbar() {
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Rechercher collègues, groupes, publications..."
+          placeholder="Rechercher  publications..."
           className={styles.searchInput}
         />
       </div>

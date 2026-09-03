@@ -1,242 +1,911 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
-/*
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
+const COLORS = [
+  'linear-gradient(135deg,#4F8EF7,#A78BFA)',
+  'linear-gradient(135deg,#34D399,#059669)',
+  'linear-gradient(135deg,#F87171,#EC4899)',
+  'linear-gradient(135deg,#FBBF24,#F59E0B)',
+];
 
+const DEPARTMENTS = ['Informatique', 'Marketing', 'RH', 'Finance', 'Direction', 'Design'];
 
- // 🔥 OPTIMISTIC UPDATE - Affiche la modification immédiatement
-    const editedAt = new Date().toISOString();
-    setMessages(prev => prev.map(m =>
-      m._id === messageId 
-        ? { ...m, content: newContent.trim(), edited: true, editedAt, isUpdating: true }
-        : m
-    ));
+export default function Directory() {
+  const { user: me, token } = useAuth();
+  const navigate = useNavigate();
+ 
+  const [users, setUsers] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [followMessage, setFollowMessage] = useState({ show: false, text: '', type: '' });
+  const [followingIds, setFollowingIds] = useState([]);
 
+  const axiosConfig = {
+    headers: { Authorization: `Bearer ${token}` }
+  };
+
+  const showMessage = (text, type = 'success') => {
+    setFollowMessage({ show: true, text, type });
+    setTimeout(() => setFollowMessage({ show: false, text: '', type: '' }), 3000);
+  };
+
+  // Récupérer tous les utilisateurs
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!token) return;
+      setLoading(true);
+      try {
+        const { data } = await axios.get(`${API}/users`, axiosConfig);
+        setUsers(data);
+       
+        // Récupérer les IDs suivis par l'utilisateur courant
+        const { data: meData } = await axios.get(`${API}/users/me`, axiosConfig);
+        const followedIds = meData.following?.map(f => f._id || f) || [];
+        setFollowingIds(followedIds);
+       
+        // Filtrer les suggestions (utilisateurs non suivis et pas moi-même)
+        const suggestionsList = data.filter(user =>
+          user._id !== me?._id && !followedIds.includes(user._id)
+        ).slice(0, 5);
+        setSuggestions(suggestionsList);
+       
+      } catch (error) {
+        console.error("Erreur chargement users:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+   
+    fetchUsers();
+  }, [token, me?._id]);
+
+  // Follow / Unfollow
+  const handleFollow = async (userId, userName) => {
     try {
-      await axios.put(`${API}/groups/${id}/messages/${messageId}`, { content: newContent.trim() });
-      // Enlever le flag isUpdating
-      setMessages(prev => prev.map(m =>
-        m._id === messageId ? { ...m, isUpdating: false } : m
+      const { data } = await axios.post(`${API}/users/${userId}/follow`, {}, axiosConfig);
+     
+      if (data.following) {
+        setFollowingIds(prev => [...prev, userId]);
+        setSuggestions(prev => prev.filter(u => u._id !== userId));
+        showMessage(`✅ Vous suivez maintenant ${userName}`, 'success');
+      } else {
+        setFollowingIds(prev => prev.filter(id => id !== userId));
+        showMessage(`❌ Vous ne suivez plus ${userName}`, 'success');
+      }
+     
+      // Mettre à jour la liste des utilisateurs
+      setUsers(prev => prev.map(user =>
+        user._id === userId
+          ? { ...user, isFollowing: data.following }
+          : user
       ));
+     
     } catch (err) {
-      console.error('Erreur modification:', err);
-      // Revert en cas d'erreur
-      setMessages(prev => prev.map(m =>
-        m._id === messageId ? { ...m, content: oldContent, edited: false, isUpdating: false } : m
-      ));
-      alert('Erreur lors de la modification');
+      console.error('Erreur follow:', err);
+      showMessage(err.response?.data?.message || 'Erreur lors du follow', 'error');
     }
   };
 
+  // Filtrer les utilisateurs
+  const filteredUsers = users.filter(user => {
+    if (user._id === me?._id) return false; // Ne pas afficher l'utilisateur courant
+   
+    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          user.department?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDepartment = !selectedDepartment || user.department === selectedDepartment;
+   
+    return matchesSearch && matchesDepartment;
+  });
 
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+      <div style={{
+        width: '48px', height: '48px',
+        border: '4px solid #2A2F45',
+        borderTopColor: '#4F8EF7',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite',
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 
+  return (
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+     
+      {/* Message de notification */}
+      {followMessage.show && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          padding: '12px 24px',
+          borderRadius: '12px',
+          background: followMessage.type === 'success' ? '#10B981' : '#EF4444',
+          color: 'white',
+          fontWeight: '600',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          animation: 'slideDown 0.3s ease',
+        }}>
+          {followMessage.text}
+        </div>
+      )}
 
-
-  <div className={styles.container}>
-      {/* Header *///}
-      /*
-      <div className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/groups')}>
-          ←
-        </button>
-
-        <div className={styles.headerInfo}>
-          <h2>{group.name}</h2>
-          <div className={styles.headerStats}>
-            <span>👥 {members.length} membre{members.length > 1 ? 's' : ''}</span>
-            {group.isPrivate && <span className={styles.privateBadge}>🔒 Privé</span>}
+      {/* Section Suggestions */}
+      {suggestions.length > 0 && (
+        <div style={{
+          background: '#181C27',
+          border: '1px solid #2A2F45',
+          borderRadius: '16px',
+          padding: '20px',
+          marginBottom: '24px',
+        }}>
+          <h3 style={{ color: '#E2E8F0', fontSize: '18px', margin: '0 0 16px 0' }}>
+            👥 Suggestions - Personnes à suivre
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
+            {suggestions.map(user => (
+              <div key={user._id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '12px',
+                  background: '#1E2336',
+                  borderRadius: '12px',
+                }}>
+                <div
+                  onClick={() => navigate(`/profile/${user._id}`)}
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '12px',
+                    background: COLORS[(user.name?.charCodeAt(0) || 0) % COLORS.length],
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontWeight: '700',
+                    fontSize: '20px',
+                    cursor: 'pointer',
+                  }}>
+                  {user.name?.[0]?.toUpperCase()}
+                </div>
+                <div style={{ flex: 1 }} onClick={() => navigate(`/profile/${user._id}`)}>
+                  <p style={{ color: '#E2E8F0', fontWeight: '600', fontSize: '15px', margin: 0, cursor: 'pointer' }}>
+                    {user.name}
+                  </p>
+                  {user.department && (
+                    <p style={{ color: '#64748B', fontSize: '12px', margin: '5px 0 0 0' }}>
+                      🏢 {user.department}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleFollow(user._id, user.name)}
+                  style={{
+                    padding: '6px 16px',
+                    borderRadius: '20px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg,#4F8EF7,#A78BFA)',
+                    color: 'white',
+                    fontWeight: '600',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s',
+                  }}
+                  onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                  onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}>
+                  Suivre
+                </button>
+              </div>
+            ))}
           </div>
         </div>
+      )}
 
-        <button
-          className={`${styles.membersBtn} ${showMembers ? styles.active : ''}`}
-          onClick={() => setShowMembers(!showMembers)}
-        >
-          👥
-        </button>
-      </div>
-
-      {/* Main content *///}
-      // /*
-     /* <div className={styles.main}>
-        {/* Chat area *///}
-        /*
-        <div className={styles.chatArea}>
-          {!isMember ? (
-            <div className={styles.locked}>
-              <div className={styles.lockedIcon}>🔒</div>
-              <h3>Groupe privé</h3>
-              <p>Rejoignez ce groupe pour voir les messages et participer à la discussion</p>
-              <button onClick={handleJoin} className={styles.joinBtn}>
-                + Rejoindre le groupe
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className={styles.messages}>
-                {messages.length === 0 ? (
-                  <div className={styles.emptyMessages}>
-                    <span>💬</span>
-                    <p>Aucun message pour le moment</p>
-                    <small>Soyez le premier à envoyer un message !</small>
-                  </div>
-                ) : (
-                  messages.map((msg) => {
-                    const isOwn = msg.sender?._id === user._id;
-                    const senderName = msg.sender?.name || 'Membre';
-                    const senderColor = getGroupColor(senderName);
-
-                    if (msg.deleted) {
-                      return (
-                        <div key={msg._id} className={styles.deletedMessage}>
-                          <em>🗑️ Message supprimé</em>
-                          {msg.isDeleting && <span className={styles.syncing}> 🔄</span>}
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div
-                        key={msg._id}
-                        className={`${styles.message} ${isOwn ? styles.own : styles.other}`}
-                      >
-                        {!isOwn && (
-                          <div
-                            className={styles.avatar}
-                            style={{ background: senderColor }}
-                          >
-                            {senderName[0]?.toUpperCase()}
-                          </div>
-                        )}
-                        <div className={styles.messageContent}>
-                          {!isOwn && (
-                            <div className={styles.sender}>
-                              {senderName}
-                              {msg.sender?.department && (
-                                <span className={styles.department}> · {msg.sender.department}</span>
-                              )}
-                            </div>
-                          )}
-                          <div className={`${styles.bubble} ${isOwn ? styles.bubbleOwn : styles.bubbleOther}`}>
-                            {msg.content}
-                            {msg.edited && (
-                              <span className={styles.edited}> (modifié)</span>
-                            )}
-                            {msg.isUpdating && <span className={styles.syncing}> ✎</span>}
-                          </div>
-                          <div className={styles.meta}>
-                            <span className={styles.time}>{formatTime(msg.createdAt)}</span>
-                            {isOwn && (
-                              <div className={styles.actions}>
-                                <button onClick={() => handleEdit(msg._id, msg.content)}>✏️</button>
-                                <button onClick={() => handleDelete(msg._id)}>🗑️</button>
-                              </div>
-                            )}
-                            {!isOwn && isAdmin && (
-                              <button
-                                className={styles.adminDelete}
-                                onClick={() => handleDelete(msg._id)}
-                              >
-                                🗑️
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-
-                {typingUsers.length > 0 && (
-                  <div className={styles.typingIndicator}>
-                    <div className={styles.typingBubble}>
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                    <p>
-                      {typingUsers.map(t => t.name).join(', ')}
-                      {typingUsers.length > 1 ? ' écrivent' : ' écrit'}...
-                    </p>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              <form onSubmit={handleSend} className={styles.inputForm}>
-                <input
-                  type="text"
-                  value={input}
-                  onChange={handleTyping}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend(e);
-                    }
-                  }}
-                  placeholder="Écrivez un message... (Entrée pour envoyer)"
-                  className={styles.input}
-                />
-                <button
-                  type="submit"
-                  disabled={!input.trim() || sending}
-                  className={styles.sendBtn}
-                >
-                  {sending ? '...' : '→'}
-                </button>
-              </form>
-            </>
-          )}
+      {/* Annuaire des membres */}
+      <div style={{
+        background: '#181C27',
+        border: '1px solid #2A2F45',
+        borderRadius: '16px',
+        overflow: 'hidden',
+      }}>
+        {/* En-tête */}
+        <div style={{
+          padding: '20px',
+          borderBottom: '1px solid #2A2F45',
+          background: 'linear-gradient(135deg, rgba(79,142,247,0.1), rgba(167,139,250,0.1))',
+        }}>
+          <h2 style={{ color: '#E2E8F0', fontSize: '24px', margin: '0 0 8px 0' }}>
+            👥 Annuaire des membres
+          </h2>
+          <p style={{ color: '#64748B', fontSize: '14px', margin: 0 }}>
+            {filteredUsers.length} membre{filteredUsers.length > 1 ? 's' : ''} trouvé{filteredUsers.length > 1 ? 's' : ''}
+          </p>
         </div>
 
-        {/* Members panel *///}
-       /* {showMembers && (
-          <div className={styles.membersPanel}>
-            <div className={styles.membersHeader}>
-              <h3>Membres ({members.length})</h3>
-              <button onClick={() => setShowMembers(false)} className={styles.closePanel}>
-                ✕
-              </button>
-            </div>
-            <div className={styles.membersList}>
-              {members.map((m, idx) => {
-                const memberId = m.user?._id || m.user;
-                const memberName = m.user?.name || 'Membre';
-                const memberDept = m.user?.department || '';
-                const isMe = memberId === user._id;
-                const memberColor = getGroupColor(memberName);
+        {/* Filtres */}
+        <div style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid #2A2F45',
+          display: 'flex',
+          gap: '12px',
+          flexWrap: 'wrap',
+        }}>
+          <input
+            type="text"
+            placeholder="🔍 Rechercher par nom ou département..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              flex: 1,
+              minWidth: '200px',
+              padding: '10px 14px',
+              background: '#1E2336',
+              border: '1px solid #2A2F45',
+              borderRadius: '10px',
+              color: '#E2E8F0',
+              fontSize: '14px',
+            }}
+          />
+          <select
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+            style={{
+              padding: '10px 14px',
+              background: '#1E2336',
+              border: '1px solid #2A2F45',
+              borderRadius: '10px',
+              color: '#E2E8F0',
+              fontSize: '14px',
+              cursor: 'pointer',
+            }}>
+            <option value="">Tous les départements</option>
+            {DEPARTMENTS.map(dept => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
+        </div>
 
-                return (
-                  <div key={memberId || idx} className={styles.memberItem}>
-                    <div className={styles.memberAvatar} style={{ background: memberColor }}>
-                      {memberName[0]?.toUpperCase()}
+        {/* Liste des membres */}
+        <div style={{ padding: '20px' }}>
+          {filteredUsers.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px', color: '#64748B' }}>
+              Aucun membre trouvé
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              {filteredUsers.map((user, index) => (
+                <div
+                  key={user._id}
+                  style={{
+                    background: '#1E2336',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div
+                      onClick={() => navigate(`/profile/${user._id}`)}
+                      style={{
+                        width: '56px',
+                        height: '56px',
+                        borderRadius: '12px',
+                        background: COLORS[index % COLORS.length],
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontWeight: '700',
+                        fontSize: '24px',
+                      }}>
+                      {user.name?.[0]?.toUpperCase()}
                     </div>
-                    <div className={styles.memberInfo}>
-                      <div className={styles.memberName}>
-                        {memberName}
-                        {isMe && <span className={styles.youTag}> (Vous)</span>}
-                      </div>
-                      {memberDept && <div className={styles.memberDept}>{memberDept}</div>}
-                    </div>
-                    <div className={styles.memberBadges}>
-                      {m.role === 'admin' && (
-                        <span className={styles.adminBadge}>Admin</span>
-                      )}
-                      {isAdmin && !isMe && m.role !== 'admin' && (
-                        <button
-                          onClick={() => handleKick(memberId, memberName)}
-                          className={styles.kickBtn}
-                        >
-                          Exclure
-                        </button>
+                    <div style={{ flex: 1 }}>
+                      <h3
+                        onClick={() => navigate(`/profile/${user._id}`)}
+                        style={{ color: '#E2E8F0', fontSize: '16px', fontWeight: '600', margin: '0 0 4px 0' }}>
+                        {user.name}
+                      </h3>
+                      {user.department && (
+                        <p style={{ color: '#4F8EF7', fontSize: '12px', margin: 0 }}>
+                          🏢 {user.department}
+                        </p>
                       )}
                     </div>
                   </div>
-                );
-              })}
+                 
+                  {user.bio && (
+                    <p style={{ color: '#64748B', fontSize: '12px', margin: '0 0 12px 0', lineHeight: '1.4' }}>
+                      {user.bio.length > 80 ? user.bio.substring(0, 80) + '...' : user.bio}
+                    </p>
+                  )}
+                 
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/profile/${user._id}`);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '6px 12px',
+                        background: 'transparent',
+                        border: '1px solid #4F8EF7',
+                        borderRadius: '8px',
+                        color: '#4F8EF7',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                      }}>
+                      Voir profil
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFollow(user._id, user.name);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '6px 12px',
+                        border: 'none',
+                        borderRadius: '8px',
+                        background: followingIds.includes(user._id) ? '#1E2336' : 'linear-gradient(135deg,#4F8EF7,#A78BFA)',
+                        color: followingIds.includes(user._id) ? '#64748B' : 'white',
+                        Border: followingIds.includes(user._id) ? '1px solid #2A2F45' : 'none',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                      }}>
+                      {followingIds.includes(user._id) ? '✓ Suivi' : '+ Suivre'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+
+ import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import PostCard from '../components/PostCard';
+import styles from './profile.module.css';
+
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5001';
+
+const COLORS = [
+  'linear-gradient(135deg,#4F8EF7,#A78BFA)',
+  'linear-gradient(135deg,#34D399,#059669)',
+  'linear-gradient(135deg,#F87171,#EC4899)',
+  'linear-gradient(135deg,#FBBF24,#F59E0B)',
+];
+
+const DEPARTMENTS = ['Informatique', 'Marketing', 'RH', 'Finance', 'Direction', 'Design'];
+
+export default function Profile() {
+  const { id } = useParams();
+  const { user: me, token } = useAuth();
+  const navigate = useNavigate();
+
+  const [profile, setProfile] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('posts');
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [editSuccess, setEditSuccess] = useState(false);
+  const [followMessage, setFollowMessage] = useState({ show: false, text: '', type: '' });
+
+  const isMe = !id || id === me?._id;
+
+  const axiosConfig = {
+    headers: { Authorization: `Bearer ${token}` }
+  };
+
+  const showMessage = (text, type = 'success') => {
+    setFollowMessage({ show: true, text, type });
+    setTimeout(() => setFollowMessage({ show: false, text: '', type: '' }), 3000);
+  };
+
+  // Récupérer le profil et les posts
+  useEffect(() => {
+    const fetchProfileAndPosts = async () => {
+      setLoading(true);
+      try {
+        const endpoint = isMe ? '/users/me' : `/users/${id}`;
+        const { data: profData } = await axios.get(`${API}${endpoint}`, axiosConfig);
+        setProfile(profData);
+
+        if (!isMe && me) {
+          setIsFollowing(
+            profData.followers?.some(
+              f => (f._id || f).toString() === me._id?.toString()
+            )
+          );
+        }
+
+        const userId = isMe ? me?._id : id;
+        if (userId) {
+          try {
+            const { data: userPosts } = await axios.get(`${API}/posts/user/${userId}`, axiosConfig);
+            setPosts(userPosts || []);
+          } catch (postErr) {
+            console.error("Erreur chargement posts:", postErr);
+            setPosts([]);
+          }
+        }
+
+      } catch (err) {
+        console.error('Erreur profil:', err);
+        setProfile(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (token && (me || isMe)) {
+      fetchProfileAndPosts();
+    }
+  }, [id, me?._id, isMe, token]);
+
+  // Follow / Unfollow
+  const handleFollow = async () => {
+    if (!id || !me) return;
+    try {
+      const { data } = await axios.post(`${API}/users/${id}/follow`, {}, axiosConfig);
+      setIsFollowing(data.following);
+
+      setProfile(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          followers: data.following
+            ? [...(prev.followers || []), { _id: me._id, name: me.name, avatar: me.avatar }]
+            : (prev.followers || []).filter(
+                f => (f._id || f).toString() !== me._id.toString()
+              ),
+        };
+      });
+    
+      showMessage(data.following ? `✅ Vous suivez maintenant ${profile?.name}` : `❌ Vous ne suivez plus ${profile?.name}`);
+    } catch (err) {
+      console.error('Erreur follow:', err);
+      showMessage(err.response?.data?.message || 'Erreur lors du follow', 'error');
+    }
+  };
+
+  // Modifier profil
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    try {
+      const { data } = await axios.put(`${API}/users/me`, {
+        name: formData.get('name'),
+        bio: formData.get('bio'),
+        department: formData.get('department'),
+      }, axiosConfig);
+      setProfile(data);
+      setEditSuccess(true);
+      setTimeout(() => setEditSuccess(false), 3000);
+      setActiveTab('posts');
+      showMessage('✅ Profil mis à jour avec succès !', 'success');
+    } catch (err) {
+      showMessage('Erreur: ' + err.message, 'error');
+    }
+  };
+
+  // Upload avatar
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setAvatarLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append('avatar', file);
+      const { data } = await axios.put(`${API}/users/me/avatar`, fd, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`
+        },
+      });
+      setProfile(data);
+      showMessage('✅ Avatar mis à jour !', 'success');
+    } catch (err) {
+      showMessage("Erreur upload avatar: " + err.message, 'error');
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
+
+  const handlePostDeleted = (postId) => {
+    setPosts(prev => prev.filter(p => p._id !== postId));
+  };
+
+  const goToCreatePost = () => {
+    navigate('/create-post');
+  };
+
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+      <div style={{
+        width: '48px', height: '48px',
+        border: '4px solid #2A2F45',
+        borderTopColor: '#4F8EF7',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite',
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+
+  if (!profile) return (
+    <div style={{ textAlign: 'center', padding: '60px', color: '#64748B', fontSize: '18px' }}>
+      Utilisateur introuvable
+    </div>
+  );
+
+  const color = COLORS[(profile.name?.charCodeAt(0) || 0) % COLORS.length];
+
+  return (
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+
+      {/* Message de notification */}
+      {followMessage.show && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          padding: '12px 24px',
+          borderRadius: '12px',
+          background: followMessage.type === 'success' ? '#10B981' : followMessage.type === 'error' ? '#EF4444' : '#3B82F6',
+          color: 'white',
+          fontWeight: '600',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          animation: 'slideDown 0.3s ease',
+        }}>
+          {followMessage.text}
+        </div>
+      )}
+
+      {/* Carte profil */}
+      <div style={{
+        background: '#181C27', border: '1px solid #2A2F45',
+        borderRadius: '24px', overflow: 'hidden',
+        marginBottom: '24px',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+      }}>
+        <div style={{ height: '120px', position: 'relative' }}>
+          <div style={{ width: '100%', height: '100%', background: color, opacity: 0.6 }} />
+        </div>
+
+        <div style={{ padding: '0 24px 24px', position: 'relative' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '-48px', marginBottom: '16px' }}>
+
+            {/* Avatar */}
+            <div style={{ position: 'relative' }}>
+              <div style={{
+                width: '96px', height: '96px', borderRadius: '50%',
+                border: '4px solid #181C27',
+                background: profile.avatar ? 'transparent' : color,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '36px', fontWeight: '900', color: 'white',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.4)', overflow: 'hidden',
+              }}>
+                {profile.avatar
+                  ? <img src={`${BASE}${profile.avatar}`} alt="avatar"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : profile.name?.[0]?.toUpperCase()
+                }
+              </div>
+              {isMe && (
+                <label style={{
+                  position: 'absolute', bottom: '0', right: '0',
+                  width: '28px', height: '28px', borderRadius: '50%',
+                  background: '#4F8EF7', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', fontSize: '14px',
+                  border: '2px solid #181C27',
+                }}>
+                  {avatarLoading ? '⏳' : '📷'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }}
+                    onChange={handleAvatarUpload} />
+                </label>
+              )}
+            </div>
+
+            {/* Bouton Follow / Modifier */}
+            {isMe ? (
+              <button onClick={() => setActiveTab('edit')}
+                style={{
+                  padding: '8px 20px', borderRadius: '12px',
+                  background: '#1E2336', border: '1px solid #2A2F45',
+                  color: '#E2E8F0', fontWeight: '600', fontSize: '14px',
+                  cursor: 'pointer',
+                }}>
+                ✏️ Modifier le profil
+              </button>
+            ) : (
+              <button onClick={handleFollow}
+                style={{
+                  padding: '8px 20px', borderRadius: '12px', border: 'none',
+                  background: isFollowing ? '#1E2336' : 'linear-gradient(135deg,#4F8EF7,#A78BFA)',
+                  color: isFollowing ? '#64748B' : 'white',
+                  fontWeight: '700', fontSize: '14px', cursor: 'pointer',
+                  Border: isFollowing ? '1px solid #2A2F45' : 'none',
+                }}>
+                {isFollowing ? '✓ Suivi' : '+ Suivre'}
+              </button>
+            )}
+          </div>
+
+          <h2 style={{ color: '#E2E8F0', fontSize: '22px', fontWeight: '900', margin: '0 0 4px' }}>
+            {profile.name}
+          </h2>
+          {profile.department && (
+            <div style={{ color: '#4F8EF7', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>
+              🏢 {profile.department}
+            </div>
+          )}
+          {profile.bio && (
+            <div style={{ color: '#64748B', fontSize: '14px', lineHeight: '1.5' }}>
+              {profile.bio}
+            </div>
+          )}
+
+          {/* STATS */}
+          <div style={{ display: 'flex', gap: '32px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #2A2F45' }}>
+            <div style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => setActiveTab('posts')}>
+              <p style={{ color: '#E2E8F0', fontWeight: '900', fontSize: '20px', margin: 0 }}>
+                {posts.length}
+              </p>
+              <p style={{ color: '#64748B', fontSize: '12px', margin: 0 }}>Publications</p>
+            </div>
+            <div style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => setActiveTab('followers')}>
+              <p style={{ color: '#E2E8F0', fontWeight: '900', fontSize: '20px', margin: 0 }}>
+                {profile.followers?.length || 0}
+              </p>
+              <p style={{ color: '#64748B', fontSize: '12px', margin: 0 }}>Abonnés</p>
+            </div>
+            <div style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => setActiveTab('following')}>
+              <p style={{ color: '#E2E8F0', fontWeight: '900', fontSize: '20px', margin: 0 }}>
+                {profile.following?.length || 0}
+              </p>
+              <p style={{ color: '#64748B', fontSize: '12px', margin: 0 }}>Abonnements</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Onglets */}
+      <div style={{
+        display: 'flex', gap: '6px',
+        background: '#181C27', border: '1px solid #2A2F45',
+        borderRadius: '16px', padding: '9px',
+        marginBottom: '20px',
+      }} className={styles.container}
+       >
+        <button onClick={() => setActiveTab('posts')}
+          style={{
+            flex: 1, padding: '10px 8px',
+            border: 'none', borderRadius: '10px', cursor: 'pointer',
+            fontSize: '13px', fontWeight: '600',
+            background: activeTab === 'posts' ? 'linear-gradient(135deg,#4F8EF7,#A78BFA)' : 'transparent',
+            color: activeTab === 'posts' ? 'white' : '#64748B',
+          }}>
+          📄 Publications ({posts.length})
+        </button>
+        <button onClick={() => setActiveTab('followers')}
+          style={{
+            flex: 1, padding: '10px 8px',
+            border: 'none', borderRadius: '10px', cursor: 'pointer',
+            fontSize: '13px', fontWeight: '600',
+            background: activeTab === 'followers' ? 'linear-gradient(135deg,#4F8EF7,#A78BFA)' : 'transparent',
+            color: activeTab === 'followers' ? 'white' : '#64748B',
+          }}>
+          👥 Abonnés ({profile.followers?.length || 0})
+        </button>
+        <button onClick={() => setActiveTab('following')}
+          style={{
+            flex: 1, padding: '10px 8px',
+            border: 'none', borderRadius: '10px', cursor: 'pointer',
+            fontSize: '13px', fontWeight: '600',
+            background: activeTab === 'following' ? 'linear-gradient(135deg,#4F8EF7,#A78BFA)' : 'transparent',
+            color: activeTab === 'following' ? 'white' : '#64748B',
+          }}>
+          📌 Abonnements ({profile.following?.length || 0})
+        </button>
+        {isMe && (
+          <button onClick={() => setActiveTab('edit')}
+            style={{
+              flex: 1, padding: '10px 8px',
+              border: 'none', borderRadius: '10px', cursor: 'pointer',
+              fontSize: '13px', fontWeight: '600',
+              background: activeTab === 'edit' ? 'linear-gradient(135deg,#4F8EF7,#A78BFA)' : 'transparent',
+              color: activeTab === 'edit' ? 'white' : '#64748B',
+            }}>
+            ✏️ Modifier
+          </button>
+        )}
+      </div>
+
+      {/* Contenu des onglets */}
+      <div style={{
+        background: '#181C27', border: '1px solid #2A2F45',
+        borderRadius: '16px', padding: '20px',
+      }}>
+
+        {/* PUBLICATIONS */}
+        {activeTab === 'posts' && (
+          <div>
+            {isMe && (
+              <button
+                onClick={goToCreatePost}
+                style={{
+                  width: '100%', padding: '12px', marginBottom: '20px',
+                  background: 'linear-gradient(135deg,#4F8EF7,#A78BFA)',
+                  border: 'none', borderRadius: '12px',
+                  color: 'white', fontWeight: '600', fontSize: '14px',
+                  cursor: 'pointer',
+                }}>
+                ✏️ Créer une publication
+              </button>
+            )}
+          
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {posts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                  <p style={{ color: '#64748B' }}>Aucune publication</p>
+                </div>
+              ) : (
+                posts.map(post => (
+                  <PostCard key={post._id} post={post} onDeleted={handlePostDeleted} />
+                ))
+              )}
             </div>
           </div>
         )}
+
+        {/* ABONNÉS */}
+        {activeTab === 'followers' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {profile.followers?.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#64748B', padding: '40px' }}>
+                Aucun abonné
+              </p>
+            ) : (
+              profile.followers.map((f, i) => (
+                <div key={f._id}
+                  onClick={() => navigate(`/profile/${f._id}`)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '12px', background: '#1E2336',
+                    borderRadius: '12px', cursor: 'pointer',
+                  }}>
+                  <div style={{
+                    width: '44px', height: '44px', borderRadius: '12px',
+                    background: COLORS[i % COLORS.length],
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'white', fontWeight: '700', fontSize: '18px',
+                  }}>{f.name?.[0]?.toUpperCase()}</div>
+                  <div>
+                    <p style={{ color: '#E2E8F0', fontWeight: '600', margin: 0 }}>{f.name}</p>
+                    {f.department && <p style={{ color: '#64748B', fontSize: '12px', margin: 0 }}>{f.department}</p>}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* ABONNEMENTS */}
+        {activeTab === 'following' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {profile.following?.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#64748B', padding: '40px' }}>
+                Aucun abonnement
+              </p>
+            ) : (
+              profile.following.map((f, i) => (
+                <div key={f._id}
+                  onClick={() => navigate(`/profile/${f._id}`)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '12px', background: '#1E2336',
+                    borderRadius: '12px', cursor: 'pointer',
+                  }}>
+                  <div style={{
+                    width: '44px', height: '44px', borderRadius: '12px',
+                    background: COLORS[i % COLORS.length],
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'white', fontWeight: '700', fontSize: '18px',
+                  }}>{f.name?.[0]?.toUpperCase()}</div>
+                  <div>
+                    <p style={{ color: '#E2E8F0', fontWeight: '600', margin: 0 }}>{f.name}</p>
+                    {f.department && <p style={{ color: '#64748B', fontSize: '12px', margin: 0 }}>{f.department}</p>}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* MODIFIER PROFIL */}
+        {activeTab === 'edit' && isMe && (
+          <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {editSuccess && (
+              <div style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34D399', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                ✅ Profil mis à jour !
+              </div>
+            )}
+            <input name="name" defaultValue={profile.name} placeholder="Nom" required
+              style={{ background: '#1E2336', border: '1px solid #2A2F45', borderRadius: '12px', padding: '12px', color: '#E2E8F0' }} />
+            <select name="department" defaultValue={profile.department}
+              style={{ background: '#1E2336', border: '1px solid #2A2F45', borderRadius: '12px', padding: '12px', color: '#E2E8F0' }}>
+              <option value="">Sélectionner un département</option>
+              {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+            <textarea name="bio" defaultValue={profile.bio} placeholder="Bio" rows="3"
+              style={{ background: '#1E2336', border: '1px solid #2A2F45', borderRadius: '12px', padding: '12px', color: '#E2E8F0', resize: 'vertical' }} />
+            <button type="submit" style={{ padding: '12px', background: 'linear-gradient(135deg,#4F8EF7,#A78BFA)', border: 'none', borderRadius: '12px', color: 'white', fontWeight: '600', cursor: 'pointer' }}>
+              💾 Sauvegarder
+            </button>
+          </form>
+        )}
       </div>
+
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
-*/
+}

@@ -1,3 +1,10 @@
+Voici la version **complète et corrigée** de `GroupChat.jsx` avec la fonctionnalité **Reply** entièrement intégrée :
+
+---
+
+## 📄 frontend/src/pages/GroupChat.jsx (COMPLET AVEC REPLY)
+
+```jsx
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -440,11 +447,6 @@ export default function GroupChat() {
 
                           <div className={styles.meta}>
                             <span className={styles.time}>{formatTime(msg.createdAt)}</span>
-                            {isOwn 
-                            && (<span className={styles.status}>
-                                        {msg.readBy?.length>1? '✓✓' : '✓'}</span>)
-                                        
-                            }
 
                             {/* ✅ MENU D'ACTIONS AVEC REPLY */}
                             <div className={styles.actions}>
@@ -678,3 +680,171 @@ export default function GroupChat() {
     </div>
   );
 }
+```
+
+---
+
+## 📄 CSS À AJOUTER dans `GroupChat.module.css`
+
+```css
+/* ============================================
+   REPLY PREVIEW (dans le message)
+   ============================================ */
+
+.replyPreview {
+  background: rgba(79, 142, 247, 0.08);
+  border-left: 3px solid #4F8EF7;
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  max-width: 100%;
+}
+
+.replyPreview:hover {
+  background: rgba(79, 142, 247, 0.15);
+}
+
+.replyAuthor {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4F8EF7;
+}
+
+.replyContent {
+  font-size: 12px;
+  color: #94A3B8;
+  margin: 2px 0 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.replyPreviewDeleted {
+  background: rgba(248, 113, 113, 0.08);
+  border-left: 3px solid #F87171;
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #94A3B8;
+}
+
+/* ============================================
+   REPLY BANNER (dans l'input)
+   ============================================ */
+
+.replyBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1E2336;
+  border-left: 3px solid #4F8EF7;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.replyBannerContent {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.replyBannerAuthor {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4F8EF7;
+}
+
+.replyBannerText {
+  font-size: 12px;
+  color: #94A3B8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.replyCancelBtn {
+  background: transparent;
+  border: none;
+  color: #64748B;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.replyCancelBtn:hover {
+  color: #F87171;
+}
+
+/* ============================================
+   BOUTON RÉPONDRE
+   ============================================ */
+
+.replyBtn {
+  background: transparent;
+  border: none;
+  color: #64748B;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.replyBtn:hover {
+  background: rgba(79, 142, 247, 0.15);
+  color: #4F8EF7;
+}
+
+/* ============================================
+   INPUT ROW
+   ============================================ */
+
+.inputRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.input {
+  flex: 1;
+  background: #1E2336;
+  border: 1px solid #2A2F45;
+  border-radius: 28px;
+  padding: 10px 18px;
+  color: #E2E8F0;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.input:focus {
+  border-color: #4F8EF7;
+  box-shadow: 0 0 0 2px rgba(79, 142, 247, 0.2);
+}
+
+.input::placeholder {
+  color: #64748B;
+}
+```
+
+---
+
+## Récapitulatif des modifications pour le Reply
+
+| Fichier | Modification |
+|---------|--------------|
+| `GroupChat.jsx` | ✅ Ajout de `replyingTo` state |
+| `GroupChat.jsx` | ✅ Modification de `handleSend` pour envoyer `replyTo` |
+| `GroupChat.jsx` | ✅ Affichage du message cité (`replyPreview`) |
+| `GroupChat.jsx` | ✅ Bouton `↩️ Répondre` dans les actions du message |
+| `GroupChat.jsx` | ✅ Bandeau de réponse dans l'input |
+| `GroupChat.jsx` | ✅ Annulation de la réponse avec bouton ✕ |
+| `GroupChat.module.css` | ✅ Styles pour `replyPreview`, `replyBanner`, etc. |

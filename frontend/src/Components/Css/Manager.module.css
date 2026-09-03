@@ -1,0 +1,471 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.container h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid #e94560;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.container h1::before {
+  content: '⚙️';
+  font-size: 1.8rem;
+}
+
+/* ===== TABLEAU ===== */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.table:hover {
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.12);
+}
+
+.table thead {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+}
+
+.table th {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #e0e0e0;
+  border-bottom: 2px solid #2a2a4a;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table td {
+  padding: 0.9rem 1.25rem;
+  vertical-align: middle;
+  font-size: 0.95rem;
+  color: #2d2d3f;
+}
+
+/* ===== CELLULE UTILISATEUR ===== */
+.userCell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  color: #1a1a2e;
+}
+
+.avatarSmall {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e94560;
+  background-color: #f0f0f0;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.avatarSmall:hover {
+  transform: scale(1.1);
+}
+
+/* ===== STATUT ===== */
+.statusActive {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: #d4edda;
+  color: #155724;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.statusActive::before {
+  content: '● ';
+  color: #28a745;
+}
+
+.statusInactive {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: #f8d7da;
+  color: #721c24;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.statusInactive::before {
+  content: '● ';
+  color: #dc3545;
+}
+
+/* ===== SÉLECTEUR DE RÔLE ===== */
+.table td select {
+  padding: 0.4rem 0.8rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  background-color: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #1a1a2e;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  min-width: 120px;
+}
+
+.table td select:hover {
+  border-color: #e94560;
+}
+
+.table td select:focus {
+  border-color: #e94560;
+  box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.15);
+}
+
+.table td select:disabled {
+  background-color: #f0f0f0;
+  color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ===== BOUTONS D'ACTION ===== */
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.actions button {
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+/* Bouton Désactiver / Réactiver */
+.actions button:not(.deleteBtn) {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.actions button:not(.deleteBtn):hover:not(:disabled) {
+  background-color: #e0a800;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+.actions button:not(.deleteBtn):active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Bouton Supprimer */
+.deleteBtn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background-color: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.deleteBtn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Boutons désactivés */
+.actions button:disabled {
+  background-color: #e9ecef !important;
+  color: #6c757d !important;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+  opacity: 0.6;
+}
+
+/* ===== MESSAGE D'ERREUR ===== */
+.container > div:last-child {
+  padding: 2rem;
+  text-align: center;
+  background-color: #f8d7da;
+  color: #721c24;
+  border-radius: 12px;
+  border: 1px solid #f5c6cb;
+  font-weight: 500;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .table {
+    font-size: 0.9rem;
+  }
+
+  .table td,
+  .table th {
+    padding: 0.75rem 1rem;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .actions button {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .container h1 {
+    font-size: 1.5rem;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table tr {
+    margin-bottom: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 0.5rem 0;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  .table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .table td:last-child {
+    border-bottom: none;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .userCell {
+    justify-content: flex-start;
+  }
+
+  .table td select {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .actions {
+    flex-direction: row;
+    width: 100%;
+  }
+
+  .actions button {
+    flex: 1;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.75rem;
+  }
+
+  .avatarSmall {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0.5rem;
+  }
+
+  .container h1 {
+    font-size: 1.2rem;
+    flex-wrap: wrap;
+  }
+
+  .table td {
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions button {
+    width: 100%;
+    font-size: 0.7rem;
+    padding: 0.4rem;
+  }
+
+  .statusActive,
+  .statusInactive {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+  }
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.table tbody tr {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.table tbody tr:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.table tbody tr:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.table tbody tr:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.table tbody tr:nth-child(5) {
+  animation-delay: 0.2s;
+}
+
+
+
+
+
+
+/* ===== THÈME SOMBRE ===== */
+@media (prefers-color-scheme: dark) {
+  .container h1 {
+    color: #e0e0e0;
+  }
+
+  .table {
+    background: #1e1e2f;
+  }
+
+  .table thead {
+    background: linear-gradient(135deg, #0d0d1a, #1a1a2e);
+  }
+
+  .table th {
+    color: #b0b0c0;
+  }
+
+  .table tbody tr {
+    border-bottom-color: #2a2a3f;
+  }
+
+  .table tbody tr:hover {
+    background-color: #2a2a3f;
+  }
+
+  .table td {
+    color: #d0d0e0;
+  }
+
+  .userCell {
+    color: #e0e0f0;
+  }
+
+  .table td select {
+    background-color: #2a2a3f;
+    color: #d0d0e0;
+    border-color: #3a3a5f;
+  }
+
+  .table td select:hover {
+    border-color: #e94560;
+  }
+
+  .table td select:disabled {
+    background-color: #1a1a2f;
+    color: #6c757d;
+  }
+
+  .statusActive {
+    background-color: #1e3a2a;
+    color: #8fdf9f;
+  }
+
+  .statusInactive {
+    background-color: #3a1e22;
+    color: #df8f9f;
+  }
+
+  .actions button:disabled {
+    background-color: #2a2a3f !important;
+    color: #6c757d !important;
+  }
+
+  .container > div:last-child {
+    background-color: #3a1e22;
+    color: #df8f9f;
+    border-color: #5a2a32;
+  }
+}

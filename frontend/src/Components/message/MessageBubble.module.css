@@ -120,3 +120,58 @@
 .statusRead {
   color: #4F8EF7;
 }
+
+.avatarSpacer{
+  width:32px;
+  flex-shrink: 0;
+}
+
+/*reply to*/
+/* Aperçu de réponse (replyTo) */
+.replyPreview {
+  border-left: 3px solid #4F8EF7;
+  background: rgba(79, 142, 247, 0.08);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+.replyAuthor {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4F8EF7;
+  display: block;
+}
+.replyContent {
+  font-size: 12px;
+  color: #94A3B8;
+  margin: 2px 0 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+}
+
+@media (max-width: 480px) {
+  .messageWrapper {
+    max-width: 78%;
+  }
+  .avatar {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* ... styles existants ... */
+@media (max-width: 768px) {
+  .messageWrapper {
+    max-width: 85%;
+  }
+  .bubble {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+  .senderName {
+    font-size: 10px;
+  }
+}

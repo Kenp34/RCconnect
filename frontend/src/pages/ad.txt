@@ -1,0 +1,1112 @@
+Vous avez raison ! Le panneau d'administration actuel n'a pas de sidebar ni de moyen de revenir à l'application principale. Je vais vous fournir un **layout d'administration complet** avec une sidebar dédiée et une navigation fluide.
+
+---
+
+## Solution : Layout d'administration avec sidebar
+
+### 1. Créer le composant AdminLayout
+
+**📄 frontend/src/components/AdminLayout.jsx**
+
+```jsx
+import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import styles from './AdminLayout.module.css';
+
+export default function AdminLayout() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  return (
+    <div className={styles.adminLayout}>
+      {/* ===== SIDEBAR ===== */}
+      <aside className={styles.sidebar}>
+        <div className={styles.sidebarHeader}>
+          <div className={styles.logo}>
+            <span className={styles.logoIcon}>⚙️</span>
+            <span className={styles.logoText}>Admin</span>
+          </div>
+          <span className={styles.logoSub}>EnterpriseConnect</span>
+        </div>
+
+        <nav className={styles.sidebarNav}>
+          {/* ✅ Retour à l'application */}
+          <Link to="/feed" className={styles.navLink}>
+            <span className={styles.navIcon}>🏠</span>
+            <span>Retour à l'app</span>
+          </Link>
+
+          <Link to="/admin" className={styles.navLinkActive}>
+            <span className={styles.navIcon}>👥</span>
+            <span>Utilisateurs</span>
+          </Link>
+
+          <Link to="/admin/analytics" className={styles.navLink}>
+            <span className={styles.navIcon}>📊</span>
+            <span>Statistiques</span>
+          </Link>
+
+          <Link to="/admin/logs" className={styles.navLink}>
+            <span className={styles.navIcon}>📋</span>
+            <span>Journaux</span>
+          </Link>
+        </nav>
+
+        <div className={styles.sidebarFooter}>
+          <div className={styles.userInfo}>
+            <div className={styles.userAvatar}>
+              {user?.name?.[0]?.toUpperCase()}
+            </div>
+            <div className={styles.userDetails}>
+              <span className={styles.userName}>{user?.name}</span>
+              <span className={styles.userRole}>
+                {user?.role === 'admin' ? '👑 Administrateur' : '📋 Manager'}
+              </span>
+            </div>
+          </div>
+          <button onClick={handleLogout} className={styles.logoutBtn}>
+            <span>🚪</span>
+            <span>Déconnexion</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* ===== CONTENU PRINCIPAL ===== */}
+      <main className={styles.mainContent}>
+        <header className={styles.topBar}>
+          <h1>Panneau d'administration</h1>
+          <div className={styles.topBarActions}>
+            <Link to="/feed" className={styles.appLink}>
+              ← Retour à l'application
+            </Link>
+          </div>
+        </header>
+        <div className={styles.contentArea}>
+          <Outlet />
+        </div>
+      </main>
+    </div>
+  );
+}
+```
+
+---
+
+### 2. CSS du Layout d'administration
+
+**📄 frontend/src/components/AdminLayout.module.css**
+
+```css
+/* ============================================
+   ADMIN LAYOUT
+   ============================================ */
+
+.adminLayout {
+  display: flex;
+  min-height: 100vh;
+  background: #0F1117;
+  color: #E2E8F0;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+
+.sidebar {
+  width: 260px;
+  min-height: 100vh;
+  background: #181C27;
+  border-right: 1px solid #2A2F45;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* ============================================
+   SIDEBAR HEADER
+   ============================================ */
+
+.sidebarHeader {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid #2A2F45;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logoIcon {
+  font-size: 28px;
+}
+
+.logoText {
+  font-size: 22px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #4F8EF7, #A78BFA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.logoSub {
+  display: block;
+  font-size: 11px;
+  color: #64748B;
+  margin-top: 4px;
+  padding-left: 2px;
+  -webkit-text-fill-color: #64748B;
+}
+
+/* ============================================
+   SIDEBAR NAVIGATION
+   ============================================ */
+
+.sidebarNav {
+  flex: 1;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navLink,
+.navLinkActive {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  color: #94A3B8;
+}
+
+.navLink:hover {
+  background: #1E2336;
+  color: #E2E8F0;
+}
+
+.navLinkActive {
+  background: rgba(79, 142, 247, 0.12);
+  color: #4F8EF7;
+}
+
+.navLinkActive:hover {
+  background: rgba(79, 142, 247, 0.18);
+}
+
+.navIcon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   SIDEBAR FOOTER
+   ============================================ */
+
+.sidebarFooter {
+  padding: 16px 20px;
+  border-top: 1px solid #2A2F45;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  background: #1E2336;
+}
+
+.userAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4F8EF7, #A78BFA);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.userDetails {
+  flex: 1;
+  min-width: 0;
+}
+
+.userName {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #E2E8F0;
+}
+
+.userRole {
+  display: block;
+  font-size: 11px;
+  color: #64748B;
+}
+
+.logoutBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #2A2F45;
+  border-radius: 10px;
+  background: transparent;
+  color: #F87171;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logoutBtn:hover {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: #F87171;
+}
+
+/* ============================================
+   CONTENU PRINCIPAL
+   ============================================ */
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ============================================
+   TOP BAR
+   ============================================ */
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #181C27;
+  border-bottom: 1px solid #2A2F45;
+  flex-shrink: 0;
+}
+
+.topBar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #E2E8F0;
+  margin: 0;
+}
+
+.topBarActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.appLink {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: #1E2336;
+  border: 1px solid #2A2F45;
+  color: #94A3B8;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.appLink:hover {
+  background: #2A2F45;
+  color: #E2E8F0;
+  border-color: #4F8EF7;
+}
+
+/* ============================================
+   CONTENT AREA
+   ============================================ */
+
+.contentArea {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  background: #0F1117;
+}
+
+/* ============================================
+   RESPONSIVE - TABLETTE
+   ============================================ */
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 80px;
+  }
+
+  .logoText,
+  .logoSub {
+    display: none;
+  }
+
+  .logo {
+    justify-content: center;
+  }
+
+  .logoIcon {
+    font-size: 32px;
+  }
+
+  .navLink,
+  .navLinkActive {
+    justify-content: center;
+    padding: 14px;
+  }
+
+  .navLink span:not(.navIcon),
+  .navLinkActive span:not(.navIcon) {
+    display: none;
+  }
+
+  .userInfo {
+    flex-direction: column;
+    padding: 12px 4px;
+  }
+
+  .userDetails {
+    display: none;
+  }
+
+  .logoutBtn span:not(:first-child) {
+    display: none;
+  }
+
+  .logoutBtn {
+    padding: 10px;
+    font-size: 20px;
+  }
+
+  .topBar h1 {
+    font-size: 16px;
+  }
+
+  .appLink span {
+    display: none;
+  }
+
+  .appLink {
+    padding: 8px 12px;
+    font-size: 18px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .adminLayout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+    height: auto;
+    position: sticky;
+    top: 0;
+    flex-direction: row;
+    padding: 8px 12px;
+    border-right: none;
+    border-bottom: 1px solid #2A2F45;
+    overflow-y: visible;
+    z-index: 10;
+  }
+
+  .sidebarHeader {
+    display: none;
+  }
+
+  .sidebarNav {
+    flex-direction: row;
+    padding: 0;
+    gap: 2px;
+    flex: 1;
+    align-items: center;
+  }
+
+  .navLink,
+  .navLinkActive {
+    padding: 10px 14px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .navLink span:not(.navIcon),
+  .navLinkActive span:not(.navIcon) {
+    display: none;
+  }
+
+  .navIcon {
+    font-size: 20px;
+    width: auto;
+  }
+
+  .sidebarFooter {
+    display: none;
+  }
+
+  .topBar {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .topBar h1 {
+    font-size: 15px;
+  }
+
+  .contentArea {
+    padding: 16px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - PETIT MOBILE
+   ============================================ */
+
+@media (max-width: 480px) {
+  .sidebar {
+    padding: 6px 8px;
+    overflow-x: auto;
+  }
+
+  .sidebarNav {
+    gap: 2px;
+  }
+
+  .navLink,
+  .navLinkActive {
+    padding: 8px 12px;
+    min-width: 44px;
+    justify-content: center;
+  }
+
+  .navIcon {
+    font-size: 18px;
+  }
+
+  .topBar {
+    padding: 10px 12px;
+  }
+
+  .topBar h1 {
+    font-size: 13px;
+  }
+
+  .contentArea {
+    padding: 12px;
+  }
+}
+```
+
+---
+
+### 3. Mise à jour de App.jsx
+
+**📄 frontend/src/App.jsx (extrait modifié)**
+
+```jsx
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Layout from './components/Layout';
+import AdminLayout from './components/AdminLayout'; // ✅ Nouveau
+import AdminPanel from './pages/AdminPanel';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Feed from './pages/Feed';
+import Profile from './pages/Profile';
+import Messages from './pages/Messages';
+import Directory from './pages/Directory';
+import GroupPage from './pages/GroupPage';
+import GroupChat from './pages/GroupChat';
+import './index.css';
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Pages publiques */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Redirection racine */}
+          <Route path="/" element={<Navigate to="/feed" replace />} />
+
+          {/* Routes protégées avec Layout principal */}
+          <Route path="/feed" element={
+            <ProtectedRoute>
+              <Layout>
+                <Feed />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/profile/:id" element={
+            <ProtectedRoute>
+              <Layout>
+                <Profile />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/profile/me" element={
+            <ProtectedRoute>
+              <Layout>
+                <Profile />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/messages" element={
+            <ProtectedRoute>
+              <Layout>
+                <Messages />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/annuaire" element={
+            <ProtectedRoute>
+              <Layout>
+                <Directory />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/groups" element={
+            <ProtectedRoute>
+              <Layout>
+                <GroupPage />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/groups/:id" element={
+            <ProtectedRoute>
+              <Layout>
+                <GroupChat />
+              </Layout>
+            </ProtectedRoute>
+          } />
+
+          {/* ✅ Routes d'administration avec AdminLayout */}
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AdminPanel />} />
+            <Route path="analytics" element={<div>Statistiques (à venir)</div>} />
+            <Route path="logs" element={<div>Journaux (à venir)</div>} />
+          </Route>
+
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/feed" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
+```
+
+---
+
+### 4. Mise à jour du Navbar pour le lien Admin
+
+**📄 frontend/src/components/Navbar.jsx (extrait modifié)**
+
+```jsx
+// Dans le rendu, ajouter le lien vers l'admin pour les admins/managers
+{/* Lien vers l'administration */}
+{(user?.role === 'admin' || user?.role === 'manager') && (
+  <Link to="/admin" className={styles.actionBtn}>
+    <span className={styles.actionIcon}>⚙️</span>
+    <span className={styles.actionLabel}>Admin</span>
+  </Link>
+)}
+```
+
+---
+
+### 5. AdminPanel.jsx mis à jour pour utiliser le layout
+
+**📄 frontend/src/pages/AdminPanel.jsx (version finale)**
+
+```jsx
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { can } from '../utils/Permissions';
+import { useAuth } from '../context/AuthContext';
+import { getAvatarUrl } from '../helpers/rooms';
+import styles from '../Components/Css/AdminPanel.module.css';
+
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+function AdminPanel() {
+  const { user } = useAuth();
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState('all');
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data } = await axios.get(`${API}/users`);
+        const list = Array.isArray(data) ? data : (data.users || data.data || []);
+        setUsers(list);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Impossible de charger la liste des utilisateurs');
+        setUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      const { data } = await axios.put(`${API}/users/${userId}/role`, { role: newRole });
+      setUsers(prev => prev.map(u => u._id === userId ? data : u));
+    } catch (err) {
+      alert(err.response?.data?.message || "Erreur lors du changement de rôle");
+    }
+  };
+
+  const handleToggleActive = async (userId, currentStatus) => {
+    try {
+      const { data } = await axios.put(`${API}/users/${userId}/deactivate`, {
+        isActive: !currentStatus
+      });
+      setUsers(prev => prev.map(u => u._id === userId ? data : u));
+    } catch (err) {
+      alert(err.response?.data?.message || "Erreur lors de la mise à jour");
+    }
+  };
+
+  const handleDelete = async (userId, userName) => {
+    if (!window.confirm(`Supprimer définitivement le compte de ${userName} ?`)) return;
+    try {
+      await axios.delete(`${API}/users/${userId}`);
+      setUsers(prev => prev.filter(u => u._id !== userId));
+    } catch (err) {
+      alert(err.response?.data?.message || "Erreur lors de la suppression");
+    }
+  };
+
+  // ✅ Filtrage
+  const filteredUsers = users.filter(u => {
+    const matchSearch = u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        u.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchRole = filterRole === 'all' || u.role === filterRole;
+    return matchSearch && matchRole;
+  });
+
+  if (loading) return <div className={styles.container}>⏳ Chargement...</div>;
+  if (error) return <div className={styles.container}>❌ {error}</div>;
+
+  return (
+    <div className={styles.container}>
+      {/* ✅ En-tête avec filtres */}
+      <div className={styles.header}>
+        <h1>👥 Gestion des utilisateurs</h1>
+        <div className={styles.filters}>
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className={styles.searchInput}
+          />
+          <select
+            value={filterRole}
+            onChange={e => setFilterRole(e.target.value)}
+            className={styles.filterSelect}
+          >
+            <option value="all">Tous les rôles</option>
+            <option value="admin">Admin</option>
+            <option value="manager">Manager</option>
+            <option value="employe">Employé</option>
+          </select>
+        </div>
+      </div>
+
+      {/* ✅ Statistiques */}
+      <div className={styles.stats}>
+        <div className={styles.statItem}>
+          <span className={styles.statNumber}>{users.length}</span>
+          <span className={styles.statLabel}>Total</span>
+        </div>
+        <div className={styles.statItem}>
+          <span className={styles.statNumber}>{users.filter(u => u.isActive).length}</span>
+          <span className={styles.statLabel}>Actifs</span>
+        </div>
+        <div className={styles.statItem}>
+          <span className={styles.statNumber}>{users.filter(u => u.role === 'admin').length}</span>
+          <span className={styles.statLabel}>Admins</span>
+        </div>
+        <div className={styles.statItem}>
+          <span className={styles.statNumber}>{users.filter(u => u.role === 'manager').length}</span>
+          <span className={styles.statLabel}>Managers</span>
+        </div>
+      </div>
+
+      {/* ✅ Tableau */}
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th>Utilisateur</th>
+            <th>Email</th>
+            <th>Rôle</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredUsers.map(u => (
+            <tr key={u._id}>
+              <td className={styles.userCell} data-label="Utilisateur">
+                <img 
+                  src={getAvatarUrl(u.avatar)} 
+                  alt={u.name} 
+                  className={styles.avatarSmall} 
+                />
+                {u.name}
+              </td>
+              <td data-label="Email">{u.email}</td>
+              <td data-label="Rôle">
+                {can(user, 'users', 'changeRole') ? (
+                  <select
+                    value={u.role}
+                    disabled={u._id === user._id}
+                    onChange={(e) => handleRoleChange(u._id, e.target.value)}
+                  >
+                    <option value="employe">Employé</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                ) : (
+                  <span>{u.role}</span>
+                )}
+              </td>
+              <td data-label="Statut">
+                <span className={u.isActive ? styles.statusActive : styles.statusInactive}>
+                  {u.isActive ? 'Actif' : 'Désactivé'}
+                </span>
+              </td>
+              <td data-label="Actions" className={styles.actions}>
+                <button
+                  disabled={u._id === user._id}
+                  onClick={() => handleToggleActive(u._id, u.isActive)}
+                >
+                  {u.isActive ? 'Désactiver' : 'Réactiver'}
+                </button>
+                {can(user, 'users', 'delete') && (
+                  <button
+                    disabled={u._id === user._id}
+                    className={styles.deleteBtn}
+                    onClick={() => handleDelete(u._id, u.name)}
+                  >
+                    Supprimer
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {filteredUsers.length === 0 && (
+        <div className={styles.emptyState}>
+          <p>Aucun utilisateur ne correspond à vos critères</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default AdminPanel;
+```
+
+---
+
+### 6. CSS supplémentaire pour AdminPanel
+
+**📄 frontend/src/Components/Css/AdminPanel.module.css (ajouts)**
+
+```css
+/* ============================================
+   EN-TÊTE & FILTRES
+   ============================================ */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #E2E8F0;
+  margin: 0;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #2A2F45;
+  background: #1E2336;
+  color: #E2E8F0;
+  font-size: 14px;
+  outline: none;
+  min-width: 200px;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  border-color: #4F8EF7;
+}
+
+.searchInput::placeholder {
+  color: #64748B;
+}
+
+.filterSelect {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #2A2F45;
+  background: #1E2336;
+  color: #E2E8F0;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.filterSelect:focus {
+  border-color: #4F8EF7;
+}
+
+/* ============================================
+   STATISTIQUES
+   ============================================ */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.statItem {
+  background: #181C27;
+  border: 1px solid #2A2F45;
+  border-radius: 12px;
+  padding: 16px 20px;
+  text-align: center;
+}
+
+.statNumber {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+  color: #E2E8F0;
+}
+
+.statLabel {
+  display: block;
+  font-size: 12px;
+  color: #64748B;
+  margin-top: 4px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px;
+  color: #64748B;
+}
+
+/* ============================================
+   RESPONSIVE - AdminPanel
+   ============================================ */
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters {
+    flex-direction: column;
+  }
+
+  .searchInput,
+  .filterSelect {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .statItem {
+    padding: 12px;
+  }
+
+  .statNumber {
+    font-size: 22px;
+  }
+
+  .header h1 {
+    font-size: 20px;
+  }
+}
+```
+
+---
+
+## Récapitulatif des fichiers créés/modifiés
+
+| Fichier | Action |
+|---------|--------|
+| `components/AdminLayout.jsx` | ✅ Nouveau - Layout admin avec sidebar |
+| `components/AdminLayout.module.css` | ✅ Nouveau - Styles du layout admin |
+| `App.jsx` | ✅ Modifié - Routes avec AdminLayout |
+| `Navbar.jsx` | ✅ Modifié - Lien vers /admin |
+| `pages/AdminPanel.jsx` | ✅ Modifié - Filtres et stats |
+
+---
+
+## Navigation dans l'administration
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ ⚙️ Admin                    ← Retour à l'application   │
+│ ─────────────────────────────────────────────────────── │
+│ 🏠 Retour à l'app                                      │
+│ 👥 Utilisateurs          ← Page active                 │
+│ 📊 Statistiques                                        │
+│ 📋 Journaux                                            │
+│ ─────────────────────────────────────────────────────── │
+│ 👤 Jean Dupont                                         │
+│    👑 Administrateur                                   │
+│ 🚪 Déconnexion                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+Maintenant vous avez une **interface d'administration complète** avec :
+- ✅ Sidebar dédiée
+- ✅ Retour à l'application
+- ✅ Navigation entre les pages admin
+- ✅ Responsive sur tous les écrans
+- ✅ Gestion des utilisateurs avec filtres et stats
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Envoyer message
+const handleSend = async (e) => {
+  e.preventDefault();
+  if (!input.trim() || !isMember || sending) return;
+
+  const content = input.trim();
+  const replyToId = replyingTo?._id || null; // ✅ Récupérer l'ID du message cité
+
+  setInput('');
+  setSending(true);
+  sendTypingGroup(id, false);
+
+  const tempMsg = {
+    _id: Date.now(),
+    content,
+    sender: { _id: user._id, name: user.name, avatar: user.avatar },
+    createdAt: new Date().toISOString(),
+    isTemp: true,
+    replyTo: replyingTo || null // ✅ Ajouter le replyTo dans le message temporaire
+  };
+  setMessages(prev => [...prev, tempMsg]);
+
+  try {
+    // ✅ Envoyer replyTo dans le body de la requête
+    const { data } = await axios.post(`${API}/groups/${id}/messages`, {
+      content,
+      replyTo: replyToId
+    });
+
+    setMessages(prev => prev.map(m => m._id === tempMsg._id ? data : m));
+
+    // ✅ Réinitialiser le reply après envoi réussi
+    setReplyingTo(null);
+
+  } catch (err) {
+    setMessages(prev => prev.filter(m => m._id !== tempMsg._id));
+    alert(err.response?.data?.message || 'Erreur lors de l\'envoi');
+  } finally {
+    setSending(false);
+  }
+};

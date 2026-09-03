@@ -1,0 +1,428 @@
+/* ============================================
+   ADMIN LAYOUT
+   ============================================ */
+
+.adminLayout {
+  display: flex;
+  min-height: 100vh;
+  background: #272727;
+  color: #E2E8F0;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+
+.sidebar {
+  width: 260px;
+  min-height: 100vh;
+  background: #181C27;
+  border-right: 1px solid #2A2F45;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* ============================================
+   SIDEBAR HEADER
+   ============================================ */
+
+.sidebarHeader {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid #2A2F45;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logoIcon {
+  font-size: 28px;
+}
+
+.logoText {
+  font-size: 22px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #4F8EF7, #A78BFA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.logoSub {
+  display: block;
+  font-size: 11px;
+  color: #64748B;
+  margin-top: 4px;
+  padding-left:10px;
+  -webkit-text-fill-color: #64748B;
+}
+
+/* ============================================
+   SIDEBAR NAVIGATION
+   ============================================ */
+
+.sidebarNav {
+  flex: 1;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navLink,
+.navLinkActive {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  color: #94A3B8;
+}
+
+.navLink:hover {
+  background: #1E2336;
+  color: #E2E8F0;
+}
+
+.navLinkActive {
+  background: rgba(79, 142, 247, 0.12);
+  color: #4F8EF7;
+}
+
+.navLinkActive:hover {
+  background: rgba(79, 142, 247, 0.18);
+}
+
+.navIcon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   SIDEBAR FOOTER
+   ============================================ */
+
+.sidebarFooter {
+  padding: 16px 20px;
+  border-top: 1px solid #2A2F45;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  background: #1E2336;
+}
+
+.userAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4F8EF7, #A78BFA);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.userDetails {
+  flex: 1;
+  min-width: 0;
+}
+
+.userName {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #E2E8F0;
+}
+
+.userRole {
+  display: block;
+  font-size: 11px;
+  color: #64748B;
+}
+
+.logoutBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #2A2F45;
+  border-radius: 10px;
+  background: transparent;
+  color: #F87171;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logoutBtn:hover {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: #F87171;
+}
+
+/* ============================================
+   CONTENU PRINCIPAL
+   ============================================ */
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ============================================
+   TOP BAR
+   ============================================ */
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background:  #181C27;
+  border-bottom: 1px solid #2A2F45;
+  flex-shrink: 0;
+}
+
+.topBar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #E2E8F0;
+  margin: 0;
+}
+
+.topBarActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.appLink {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: #1E2336;
+  border: 1px solid #2A2F45;
+  color: #94A3B8;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.appLink:hover {
+  background: #2A2F45;
+  color: #E2E8F0;
+  border-color: #4F8EF7;
+}
+
+/* ============================================
+   CONTENT AREA
+   ============================================ */
+
+.contentArea {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  background: #f6f8ff;
+}
+
+/* ============================================
+   RESPONSIVE - TABLETTE
+   ============================================ */
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 80px;
+  }
+
+  .logoText,
+  .logoSub {
+    display: none;
+  }
+
+  .logo {
+    justify-content: center;
+  }
+
+  .logoIcon {
+    font-size: 32px;
+  }
+
+  .navLink,
+  .navLinkActive {
+    justify-content: center;
+    padding: 14px;
+  }
+
+  .navLink span:not(.navIcon),
+  .navLinkActive span:not(.navIcon) {
+    display: none;
+  }
+
+  .userInfo {
+    flex-direction: column;
+    padding: 12px 4px;
+  }
+
+  .userDetails {
+    display: none;
+  }
+
+  .logoutBtn span:not(:first-child) {
+    display: none;
+  }
+
+  .logoutBtn {
+    padding: 10px;
+    font-size: 20px;
+  }
+
+  .topBar h1 {
+    font-size: 16px;
+  }
+
+  .appLink span {
+    display: none;
+  }
+
+  .appLink {
+    padding: 8px 12px;
+    font-size: 18px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .adminLayout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+    height: auto;
+    position: sticky;
+    top: 0;
+    flex-direction: row;
+    padding: 8px 12px;
+    border-right: none;
+    border-bottom: 1px solid #2A2F45;
+    overflow-y: visible;
+    z-index: 10;
+  }
+
+  .sidebarHeader {
+    display: none;
+  }
+
+  .sidebarNav {
+    flex-direction: row;
+    padding: 0;
+    gap: 2px;
+    flex: 1;
+    align-items: center;
+  }
+
+  .navLink,
+  .navLinkActive {
+    padding: 10px 14px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .navLink span:not(.navIcon),
+  .navLinkActive span:not(.navIcon) {
+    display: none;
+  }
+
+  .navIcon {
+    font-size: 20px;
+    width: auto;
+  }
+
+  .sidebarFooter {
+    display: none;
+  }
+
+  .topBar {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .topBar h1 {
+    font-size: 15px;
+  }
+
+  .contentArea {
+    padding: 16px;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - PETIT MOBILE
+   ============================================ */
+
+@media (max-width: 480px) {
+  .sidebar {
+    padding: 6px 8px;
+    overflow-x: auto;
+  }
+
+  .sidebarNav {
+    gap: 2px;
+  }
+
+  .navLink,
+  .navLinkActive {
+    padding: 8px 12px;
+    min-width: 44px;
+    justify-content: center;
+  }
+
+  .navIcon {
+    font-size: 18px;
+  }
+
+  .topBar {
+    padding: 10px 12px;
+  }
+
+  .topBar h1 {
+    font-size: 13px;
+  }
+
+  .contentArea {
+    padding: 12px;
+  }
+}

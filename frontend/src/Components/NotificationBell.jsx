@@ -17,6 +17,7 @@ export default function NotificationBell() {
   const dropdownRef = useRef(null);
 
   // Socket avec callback pour les notifications
+  /*
   const { isConnected, joinPersonalRoom } = useSocket(
     () => {}, // onNewMessage
     () => {}, // onMessageEdited
@@ -32,7 +33,22 @@ export default function NotificationBell() {
       // const audio = new Audio('/notification.mp3');
       // audio.play();
     }
-  );
+  );*/
+
+  // ── NotificationBell.jsx ──
+  // ✅ Utiliser registerCallbacks dans un useEffect
+  const { isConnected, joinPersonalRoom,
+    registerCallbacks } = useSocket();
+
+  useEffect(() => {
+    registerCallbacks({
+      onNotification: (notification) => {
+        setNotifications(prev => [notification, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      }
+    })
+  });
+
 
   // Rejoindre la room personnelle
   useEffect(() => {
@@ -45,7 +61,7 @@ export default function NotificationBell() {
   // Charger les notifications
   useEffect(() => {
     if (!user) return;
-    
+
     const fetchNotifications = async () => {
       try {
         const { data } = await axios.get(`${API}/notifications`);
@@ -55,7 +71,7 @@ export default function NotificationBell() {
         console.error('Erreur:', error);
       }
     };
-    
+
     fetchNotifications();
   }, [user]);
 
@@ -83,7 +99,7 @@ export default function NotificationBell() {
 
   const getMessage = (notif) => {
     const senderName = notif.sender?.name || 'Quelqu\'un';
-    
+
     switch (notif.type) {
       case 'message':
         return `${senderName}: "${notif.message?.substring(0, 50)}${notif.message?.length > 50 ? '...' : ''}"`;
@@ -103,7 +119,7 @@ export default function NotificationBell() {
   const markAsRead = async (id) => {
     try {
       await axios.put(`${API}/notifications/${id}/read`);
-      setNotifications(prev => prev.map(n => 
+      setNotifications(prev => prev.map(n =>
         n._id === id ? { ...n, read: true } : n
       ));
       setUnreadCount(prev => Math.max(0, prev - 1));
@@ -138,7 +154,7 @@ export default function NotificationBell() {
   const handleClick = (notif) => {
     if (!notif.read) markAsRead(notif._id);
     setIsOpen(false);
-    
+
     if (notif.type === 'message') {
       navigate('/messages');
     } else if (notif.post) {
@@ -153,7 +169,7 @@ export default function NotificationBell() {
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now - date;
-    
+
     if (diff < 60000) return "À l'instant";
     if (diff < 3600000) return `Il y a ${Math.floor(diff / 60000)} min`;
     if (diff < 86400000) {
@@ -170,7 +186,7 @@ export default function NotificationBell() {
 
   return (
     <div className={styles.bellContainer} ref={dropdownRef}>
-      <button 
+      <button
         className={styles.bellButton}
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -194,13 +210,13 @@ export default function NotificationBell() {
           </div>
 
           <div className={styles.tabs}>
-            <button 
+            <button
               className={`${styles.tab} ${activeTab === 'all' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('all')}
             >
               Toutes
             </button>
-            <button 
+            <button
               className={`${styles.tab} ${activeTab === 'unread' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('unread')}
             >
@@ -217,8 +233,8 @@ export default function NotificationBell() {
               </div>
             ) : (
               filtered.map(n => (
-                <div 
-                  key={n._id} 
+                <div
+                  key={n._id}
                   className={`${styles.item} ${!n.read ? styles.unread : ''}`}
                   onClick={() => handleClick(n)}
                 >
@@ -230,7 +246,7 @@ export default function NotificationBell() {
                     </div>
                     <p className={styles.message}>{getMessage(n)}</p>
                   </div>
-                  <button 
+                  <button
                     className={styles.deleteBtn}
                     onClick={(e) => { e.stopPropagation(); deleteNotification(n._id); }}>
                     ✕

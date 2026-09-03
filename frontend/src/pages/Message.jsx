@@ -17,8 +17,8 @@ export default function Messages() {
   const [loading, setLoading] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
 
-  const { joinRoom, sendMessage, sendTyping, registerCallbacks } = useSocket();
-  
+  const { joinRoom, sendTyping, registerCallbacks } = useSocket();
+
 
   // Mettre à jour la liste des conversations
   const updateConversationLastMessage = useCallback((message) => {
@@ -63,6 +63,8 @@ export default function Messages() {
       // 🔥 Quand on reçoit un message de l'AUTRE personne
       onNewMessage: (newMessage) => {
         console.log('📩 Message reçu de:', newMessage.sender?.name);
+        if (newMessage.sender._id === user._id) return;
+
         updateConversationLastMessage(newMessage);
         setMessages(prev => {
           const exists = prev.some(m => m._id === newMessage._id);
@@ -70,25 +72,25 @@ export default function Messages() {
           return [...prev, newMessage];
         });
       },
-      
+
       onMessageEdited: ({ messageId, content, editedAt }) => {
         setMessages(prev => prev.map(msg =>
           msg._id === messageId ? { ...msg, content, edited: true, editedAt } : msg
         ));
       },
-      
+
       onMessageDeleted: ({ messageId }) => {
         setMessages(prev => prev.map(msg =>
           msg._id === messageId ? { ...msg, deleted: true, content: '[Message supprimé]' } : msg
         ));
       },
-      
+
       onTyping: (userId, userName, isTyping) => {
         setTypingUser(isTyping ? { id: userId, name: userName } : null);
         if (isTyping) setTimeout(() => setTypingUser(null), 2000);
       }
     });
-  }, [registerCallbacks, updateConversationLastMessage]);
+  }, [registerCallbacks, user._id, updateConversationLastMessage]);
 
   // Charger les conversations
   useEffect(() => {
@@ -112,7 +114,7 @@ export default function Messages() {
     setLoading(true);
     setActiveConversation(otherUser);
     joinRoom(otherUser._id);
-    
+
     try {
       const { data } = await axios.get(`${API}/messages/${otherUser._id}`);
       setMessages(data);
@@ -124,9 +126,9 @@ export default function Messages() {
   }, [joinRoom]);
 
   // 🚀 ENVOYER UN MESSAGE
-  const handleSendMessage = useCallback((content) => {
+  const [replyingTo, setReplyingTo] = useState(null); // ajouté
+  const handleSendMessage = useCallback((content, replyTo) => {
     if (!content.trim() || !activeConversation) return;
-
     const tempId = Date.now();
     const tempMessage = {
       _id: tempId,
@@ -134,31 +136,43 @@ export default function Messages() {
       sender: { _id: user._id, name: user.name, avatar: user.avatar },
       recipient: activeConversation,
       createdAt: new Date().toISOString(),
-      read: false
+      read: false,
+      replyTo: replyingTo || null // aperçu affiché immédiatement, avant confirmation serveur
     };
-    
-    // 🔥 1. AFFICHAGE IMMÉDIAT (optimistic update)
+    // 1. Affichage immédiat (optimistic update)
     setMessages(prev => [...prev, tempMessage]);
     updateConversationLastMessage(tempMessage);
-
-    // 2. Envoi API (sauvegarde)
+    // 2. Envoi API (sauvegarde) — replyTo transmis dans le corps de la requête
     axios.post(`${API}/messages`, {
       recipientId: activeConversation._id,
-      content: content.trim()
+      content: content.trim(),
+      replyTo: replyTo || null
     })
-    .then(({ data }) => {
-      // Remplacer le message temporaire par le vrai
-      setMessages(prev => prev.map(msg => msg._id === tempId ? data : msg));
-      updateConversationLastMessage(data);
-    })
-    .catch((err) => {
-      console.error('Erreur:', err);
-      setMessages(prev => prev.filter(msg => msg._id !== tempId));
-    });
-    
-    // 3. Envoi Socket (pour l'autre personne)
-    sendMessage(activeConversation._id, content.trim());
-  }, [activeConversation, user, sendMessage, updateConversationLastMessage]);
+      .then(({ data }) => {
+        setMessages(prev => prev.map(msg => msg._id === tempId ? data : msg));
+        updateConversationLastMessage(data);
+      })
+      .catch((err) => {
+        console.error('Erreur:', err);
+        setMessages(prev => prev.filter(msg => msg._id !== tempId));
+      });
+    // La route REST crée le message ET diffuse 'newMessage' à la room —
+    // l'appel sendMessage() Socket.io reste supprimé (évite le double envoi)
+    setReplyingTo(null); // on efface l'état de réponse une fois l'envoi lancé
+  }, [activeConversation, user, updateConversationLastMessage, replyingTo]);
+
+ const handleEditMessage = useCallback(async (messageId, newContent) => {
+    try {
+      const { data } = await axios.put(`${API}/messages/${messageId}`, { content: newContent });
+      setMessages(prev => prev.map(msg =>
+        msg._id === messageId ? { ...msg, content: data.content, edited: true } : msg
+      ));
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  }, []);
+
+
 
   const handleDeleteMessage = useCallback(async (messageId) => {
     try {
@@ -171,22 +185,14 @@ export default function Messages() {
     }
   }, []);
 
-  const handleEditMessage = useCallback(async (messageId, newContent) => {
-    try {
-      const { data } = await axios.put(`${API}/messages/${messageId}`, { content: newContent });
-      setMessages(prev => prev.map(msg =>
-        msg._id === messageId ? { ...msg, content: data.content, edited: true } : msg
-      ));
-    } catch (error) {
-      console.error('Erreur:', error);
-    }
-  }, []);
+ 
 
   const handleTyping = useCallback((isTyping) => {
     if (activeConversation) {
       sendTyping(activeConversation._id, isTyping);
     }
   }, [activeConversation, sendTyping]);
+
 
   return (
     <div className={styles.messagesContainer}>
@@ -208,6 +214,9 @@ export default function Messages() {
           typingUser={typingUser}
           onDeleteMessage={handleDeleteMessage}
           onEditMessage={handleEditMessage}
+          replyingTo={replyingTo}
+          onReply={setReplyingTo}
+          onCancelReply={() => setReplyingTo(null)}
         />
       </div>
     </div>

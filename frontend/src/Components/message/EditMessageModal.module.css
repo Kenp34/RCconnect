@@ -104,3 +104,9 @@
 
 .submitBtn:hover { opacity: 0.85; }
 .submitBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@media (max-width: 480px) {
+  .emptyChatState {
+    padding: 32px 16px;
+  }
+}

@@ -6,9 +6,11 @@
   flex-direction: column;
   padding: 24px 0;
   overflow-y: auto;
+  min-height: 100vh;
 }
 
-.menuSection, .groupsSection {
+.menuSection,
+.groupsSection {
   padding: 0 16px;
   margin-bottom: 32px;
 }
@@ -23,7 +25,8 @@
   padding-left: 12px;
 }
 
-.menuList, .groupsList {
+.menuList,
+.groupsList {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -133,5 +136,66 @@
 }
 
 .logoutButton:hover {
-  background: #fef2f2;
+  background: #3f3e3e;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: 590px;
+    width: 100%;
+    height: 64px;
+   
+    padding: 0;
+    border-right: none;
+    border-top: 1px solid #2A2F45;
+    background: #12151f;
+    z-index: 100;
+    overflow-y: visible;
+  }
+
+  .sectionTitle,
+  .groupsSection,
+  .bottomSection {
+    display: none;
+  }
+
+  /* Masquer le titre "MENU", la liste de groupes, et le bouton déconnexion —     réservés à la version desktop, pas de place sur une barre basse */
+  .menuSection {
+    display: flex;
+    flex-direction: row;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .menuList {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+    list-style: none;
+  }
+
+  .menuLink {
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 10px;
+    font-size: 10px;
+    text-align: center;
+  }
+}
+
+
+/* Sur les très petits écrans, réduire encore le texte des libellés */
+
+@media (max-width: 380px) {
+  .menuLink {
+    font-size: 9px;
+    padding: 6px 6px;
+  }
 }

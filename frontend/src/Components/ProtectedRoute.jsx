@@ -8,4 +8,17 @@ export default function ProtectedRoute({ children }) {
   return token ? children : <Navigate to='/login' replace />;
 }
 
- 
+
+
+
+export function AdminRoute({ children }) {
+  const { user } = useAuth();
+  if (user?.role !== 'admin') return <Navigate to="/" />;
+  return children;
+}
+
+export function ManageRoute({ children }) {
+  const { user } = useAuth();
+  if (user?.role !== 'manager') return <Navigate to="/" />;
+  return children;
+}

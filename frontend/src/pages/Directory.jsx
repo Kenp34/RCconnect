@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import styles from './Directory.module.css';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -104,171 +105,92 @@ export default function Directory() {
   });
 
   if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
-      <div style={{
-        width: '48px', height: '48px',
-        border: '4px solid #2A2F45',
-        borderTopColor: '#4F8EF7',
-        borderRadius: '50%',
-        animation: 'spin 1s linear infinite',
-      }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div className={styles.loadingPage}>
+      <div className={styles.spinner} />
     </div>
   );
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+    <div className={styles.directoryPage}>
      
       {/* Message de notification */}
       {followMessage.show && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          padding: '12px 24px',
-          borderRadius: '12px',
-          background: followMessage.type === 'success' ? '#10B981' : '#EF4444',
-          color: 'white',
-          fontWeight: '600',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-          animation: 'slideDown 0.3s ease',
-        }}>
+        <div className={`${styles.notification} ${
+          followMessage.type === 'success' ? styles.notificationSuccess : styles.notificationError
+        }`}>
           {followMessage.text}
         </div>
       )}
 
       {/* Section Suggestions */}
       {suggestions.length > 0 && (
-        <div style={{
-          background: '#181C27',
-          border: '1px solid #2A2F45',
-          borderRadius: '16px',
-          padding: '20px',
-          marginBottom: '24px',
-        }}>
-          <h3 style={{ color: '#E2E8F0', fontSize: '18px', margin: '0 0 16px 0' }}>
+        <section className={styles.suggestions}>
+          <h3 className={styles.sectionTitle}>
             👥 Suggestions - Personnes à suivre
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
+
+          <div className={styles.suggestionsGrid}>
             {suggestions.map(user => (
-              <div key={user._id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px',
-                  background: '#1E2336',
-                  borderRadius: '12px',
-                }}>
+              <div key={user._id} className={styles.suggestionCard}>
                 <div
+                  className={styles.suggestionAvatar}
                   onClick={() => navigate(`/profile/${user._id}`)}
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '12px',
-                    background: COLORS[(user.name?.charCodeAt(0) || 0) % COLORS.length],
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    fontWeight: '700',
-                    fontSize: '20px',
-                    cursor: 'pointer',
-                  }}>
+                >
                   {user.name?.[0]?.toUpperCase()}
                 </div>
-                <div style={{ flex: 1 }} onClick={() => navigate(`/profile/${user._id}`)}>
-                  <p style={{ color: '#E2E8F0', fontWeight: '600', fontSize: '15px', margin: 0, cursor: 'pointer' }}>
-                    {user.name}
-                  </p>
+
+                <div
+                  className={styles.suggestionInfo}
+                  onClick={() => navigate(`/profile/${user._id}`)}
+                >
+                  <p className={styles.suggestionName}>{user.name}</p>
+
                   {user.department && (
-                    <p style={{ color: '#64748B', fontSize: '12px', margin: '5px 0 0 0' }}>
+                    <p className={styles.suggestionDepartment}>
                       🏢 {user.department}
                     </p>
                   )}
                 </div>
+
                 <button
+                  className={styles.followSuggestionButton}
                   onClick={() => handleFollow(user._id, user.name)}
-                  style={{
-                    padding: '6px 16px',
-                    borderRadius: '20px',
-                    border: 'none',
-                    background: 'linear-gradient(135deg,#4F8EF7,#A78BFA)',
-                    color: 'white',
-                    fontWeight: '600',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s',
-                  }}
-                  onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-                  onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}>
+                >
                   Suivre
                 </button>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {/* Annuaire des membres */}
-      <div style={{
-        background: '#181C27',
-        border: '1px solid #2A2F45',
-        borderRadius: '16px',
-        overflow: 'hidden',
-      }}>
+      <section className={styles.directoryCard}>
         {/* En-tête */}
-        <div style={{
-          padding: '20px',
-          borderBottom: '1px solid #2A2F45',
-          background: 'linear-gradient(135deg, rgba(79,142,247,0.1), rgba(167,139,250,0.1))',
-        }}>
-          <h2 style={{ color: '#E2E8F0', fontSize: '24px', margin: '0 0 8px 0' }}>
+        <div className={styles.directoryHeader}>
+          <h2 className={styles.directoryTitle}>
             👥 Annuaire des membres
           </h2>
-          <p style={{ color: '#64748B', fontSize: '14px', margin: 0 }}>
+          <p className={styles.directoryCount}>
             {filteredUsers.length} membre{filteredUsers.length > 1 ? 's' : ''} trouvé{filteredUsers.length > 1 ? 's' : ''}
           </p>
         </div>
 
         {/* Filtres */}
-        <div style={{
-          padding: '16px 20px',
-          borderBottom: '1px solid #2A2F45',
-          display: 'flex',
-          gap: '12px',
-          flexWrap: 'wrap',
-        }}>
+        <div className={styles.filters}>
           <input
+            className={styles.searchInput}
             type="text"
             placeholder="🔍 Rechercher par nom ou département..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              flex: 1,
-              minWidth: '200px',
-              padding: '10px 14px',
-              background: '#1E2336',
-              border: '1px solid #2A2F45',
-              borderRadius: '10px',
-              color: '#E2E8F0',
-              fontSize: '14px',
-            }}
           />
+
           <select
+            className={styles.departmentSelect}
             value={selectedDepartment}
             onChange={(e) => setSelectedDepartment(e.target.value)}
-            style={{
-              padding: '10px 14px',
-              background: '#1E2336',
-              border: '1px solid #2A2F45',
-              borderRadius: '10px',
-              color: '#E2E8F0',
-              fontSize: '14px',
-              cursor: 'pointer',
-            }}>
+          >
             <option value="">Tous les départements</option>
             {DEPARTMENTS.map(dept => (
               <option key={dept} value={dept}>{dept}</option>
@@ -277,23 +199,17 @@ export default function Directory() {
         </div>
 
         {/* Liste des membres */}
-        <div style={{ padding: '20px' }}>
+        <div className={styles.membersContainer}>
           {filteredUsers.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px', color: '#64748B' }}>
+            <div className={styles.emptyState}>
               Aucun membre trouvé
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+            <div className={styles.membersGrid}>
               {filteredUsers.map((user, index) => (
-                <div
+                <article
                   key={user._id}
-                  style={{
-                    background: '#1E2336',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    cursor: 'pointer',
-                  }}
+                  className={styles.memberCard}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-2px)';
                     e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
@@ -301,102 +217,71 @@ export default function Directory() {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
                     e.currentTarget.style.boxShadow = 'none';
-                  }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                  }}
+                >
+                  <div className={styles.memberHeader}>
                     <div
-                      onClick={() => navigate(`/profile/${user._id}`)}
+                      className={styles.memberAvatar}
                       style={{
-                        width: '56px',
-                        height: '56px',
-                        borderRadius: '12px',
                         background: COLORS[index % COLORS.length],
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontWeight: '700',
-                        fontSize: '24px',
-                      }}>
+                      }}
+                      onClick={() => navigate(`/profile/${user._id}`)}
+                    >
                       {user.name?.[0]?.toUpperCase()}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <h3
-                        onClick={() => navigate(`/profile/${user._id}`)}
-                        style={{ color: '#E2E8F0', fontSize: '16px', fontWeight: '600', margin: '0 0 4px 0' }}>
-                        {user.name}
-                      </h3>
+
+                    <div
+                      className={styles.memberInfo}
+                      onClick={() => navigate(`/profile/${user._id}`)}
+                    >
+                      <h3 className={styles.memberName}>{user.name}</h3>
+
                       {user.department && (
-                        <p style={{ color: '#4F8EF7', fontSize: '12px', margin: 0 }}>
+                        <p className={styles.memberDepartment}>
                           🏢 {user.department}
                         </p>
                       )}
                     </div>
                   </div>
-                 
+
                   {user.bio && (
-                    <p style={{ color: '#64748B', fontSize: '12px', margin: '0 0 12px 0', lineHeight: '1.4' }}>
-                      {user.bio.length > 80 ? user.bio.substring(0, 80) + '...' : user.bio}
+                    <p className={styles.memberBio}>
+                      {user.bio.length > 80
+                        ? user.bio.substring(0, 80) + '...'
+                        : user.bio}
                     </p>
                   )}
-                 
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+
+                  <div className={styles.memberActions}>
                     <button
+                      className={styles.profileButton}
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/profile/${user._id}`);
                       }}
-                      style={{
-                        flex: 1,
-                        padding: '6px 12px',
-                        background: 'transparent',
-                        border: '1px solid #4F8EF7',
-                        borderRadius: '8px',
-                        color: '#4F8EF7',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                      }}>
+                    >
                       Voir profil
                     </button>
+
                     <button
+                      className={`${styles.followButton} ${
+                        followingIds.includes(user._id) ? styles.following : ''
+                      }`}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleFollow(user._id, user.name);
                       }}
-                      style={{
-                        flex: 1,
-                        padding: '6px 12px',
-                        border: 'none',
-                        borderRadius: '8px',
-                        background: followingIds.includes(user._id) ? '#1E2336' : 'linear-gradient(135deg,#4F8EF7,#A78BFA)',
-                        color: followingIds.includes(user._id) ? '#64748B' : 'white',
-                        Border: followingIds.includes(user._id) ? '1px solid #2A2F45' : 'none',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                      }}>
+                    >
                       {followingIds.includes(user._id) ? '✓ Suivi' : '+ Suivre'}
                     </button>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}
         </div>
-      </div>
+      </section>
 
-      <style>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateX(-50%) translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

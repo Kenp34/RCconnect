@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatMessageTime } from '../../helpers/rooms.js';
+import { formatMessageTime ,getAvatarUrl } from '../../helpers/rooms.js';
 import styles from './ConversationList.module.css';
 
 export default function ConversationList({
@@ -73,11 +73,8 @@ export default function ConversationList({
 
                   <div className={styles.avatarWrapper}>
                     {other.avatar ? (
-                      <img
-                        src={`${import.meta.env.VITE_API_URL
-                          ?.replace('/api', '')}${other.avatar}`}
-                        alt={other.name}
-                        className={styles.avatarImg} />
+                      <img src={getAvatarUrl(other.avatar)} alt={other.name} className={styles.avatarImg} />
+                        
                     ) : (
                       <div className={styles.avatarPlaceholder}>
                         {other.name?.charAt(0).toUpperCase()}
@@ -121,8 +118,7 @@ export default function ConversationList({
 
                   <div className={styles.avatarWrapper}>
                     {f.avatar ? (
-                      <img src={f.avatar} alt={f.name}
-                        className={styles.avatarImg} />
+                      <img src={getAvatarUrl(f.avatar)} alt={f.name} className={styles.avatarImg} />
                     ) : (
                       <div className={styles.avatarPlaceholder}
                         style={{

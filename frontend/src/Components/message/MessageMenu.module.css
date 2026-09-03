@@ -202,3 +202,15 @@
 }
 
 .deleteBtn:hover { opacity: 0.85; }
+
+
+
+@media (max-width: 400px) {
+  .menuDropdown {
+    min-width: 120px;
+  }
+  .menuItem {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}

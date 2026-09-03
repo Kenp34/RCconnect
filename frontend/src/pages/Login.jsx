@@ -3,24 +3,36 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
-  const [form, setForm]   = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login }   = useAuth();
-  const navigate    = useNavigate();
+const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const { login } = useAuth();
+    const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await login(form.email, form.password);
-      navigate('/feed');
-    } catch {
-      setError('Email ou mot de passe incorrect');
-    } finally {
-      setLoading(false);
-    }
-  }
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+            console.log('📡 Soumission formulaire login');
+            const result = await login(email, password);
+            
+            if (result.success) {
+                console.log('✅ Login réussi, redirection vers /feed');
+                navigate('/feed');
+            } else {
+                setError(result.error || 'Identifiants invalides');
+                console.log('❌ Login échoué:', result.error);
+            }
+        } catch (err) {
+            console.error('❌ Erreur inattendue:', err);
+            setError('Erreur de connexion au serveur');
+        } finally {
+            setLoading(false);
+        }
+    };
 
   return (
     <div style={{
@@ -59,9 +71,9 @@ export default function Login() {
             fontWeight: '900', color: 'white', fontSize: '18px',
             background: 'linear-gradient(135deg, #4F8EF7, #A78BFA)',
             boxShadow: '0 8px 32px rgba(79,142,247,0.3)',
-          }}>EC</div>
+          }}>RC</div>
           <h1 style={{ color: '#E2E8F0', fontWeight: '900', fontSize: '24px', letterSpacing: '-0.5px' }}>
-            EnterpriseConnect
+            RCconnect
           </h1>
           <p style={{ color: '#64748B', fontSize: '14px', marginTop: '4px' }}>
             Connectez-vous à votre espace de travail
@@ -86,78 +98,86 @@ export default function Login() {
               textAlign: 'center', marginBottom: '20px',
             }}>{error}</div>
           )}
+          
+         
 
-          {/* Email */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{
-              display: 'block', fontSize: '11px', fontWeight: '700',
-              color: '#64748B', textTransform: 'uppercase',
-              letterSpacing: '0.08em', marginBottom: '6px',
-            }}>Email professionnel</label>
-            <input
-              type="email"
-              placeholder="jean@entreprise.com"
-              onChange={e => setForm({ ...form, email: e.target.value })}
-              style={{
-                width: '100%', background: '#1E2336',
-                border: '1px solid #2A2F45', borderRadius: '12px',
-                padding: '12px 14px', fontSize: '14px',
-                color: '#E2E8F0', outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={e => e.target.style.borderColor = '#4F8EF7'}
-              onBlur={e => e.target.style.borderColor = '#2A2F45'}
-            />
-          </div>
+          
+        <form onSubmit={handleSubmit}>
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: '6px' }}>
+                                Email professionnel
+                            </label>
+                            <input
+                                type="email"
+                                placeholder="jean@entreprise.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    background: '#1E2336',
+                                    border: '1px solid #2A2F45',
+                                    borderRadius: '12px',
+                                    padding: '12px 14px',
+                                    fontSize: '14px',
+                                    color: '#E2E8F0',
+                                    outline: 'none'
+                                }}
+                                required
+                            />
+                        </div>
 
-          {/* Mot de passe */}
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{
-              display: 'block', fontSize: '11px', fontWeight: '700',
-              color: '#64748B', textTransform: 'uppercase',
-              letterSpacing: '0.08em', marginBottom: '6px',
-            }}>Mot de passe</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              onChange={e => setForm({ ...form, password: e.target.value })}
-              style={{
-                width: '100%', background: '#1E2336',
-                border: '1px solid #2A2F45', borderRadius: '12px',
-                padding: '12px 14px', fontSize: '14px',
-                color: '#E2E8F0', outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={e => e.target.style.borderColor = '#4F8EF7'}
-              onBlur={e => e.target.style.borderColor = '#2A2F45'}
-            />
-          </div>
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: '6px' }}>
+                                Mot de passe
+                            </label>
+                            <input
+                                type="password"
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    background: '#1E2336',
+                                    border: '1px solid #2A2F45',
+                                    borderRadius: '12px',
+                                    padding: '12px 14px',
+                                    fontSize: '14px',
+                                    color: '#E2E8F0',
+                                    outline: 'none'
+                                }}
+                                required
+                            />
+                        </div>
 
-          {/* Bouton */}
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            style={{
-              width: '100%', padding: '13px',
-              background: 'linear-gradient(135deg, #4F8EF7, #A78BFA)',
-              border: 'none', borderRadius: '12px',
-              color: 'white', fontWeight: '700', fontSize: '14px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.6 : 1,
-              boxShadow: '0 4px 20px rgba(79,142,247,0.4)',
-              transition: 'opacity 0.2s',
-            }}>
-            {loading ? '⏳ Connexion...' : 'Se connecter →'}
-          </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            style={{
+                                width: '100%',
+                                padding: '13px',
+                                background: 'linear-gradient(135deg, #4F8EF7, #A78BFA)',
+                                border: 'none',
+                                borderRadius: '12px',
+                                color: 'white',
+                                fontWeight: '700',
+                                fontSize: '14px',
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                opacity: loading ? 0.6 : 1
+                            }}
+                        >
+                            {loading ? '⏳ Connexion...' : 'Se connecter →'}
+                        </button>
+                    </form>
 
-          <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748B', marginTop: '20px' }}>
-            Pas encore de compte ?{' '}
-            <Link to="/register" style={{ color: '#4F8EF7', fontWeight: '700', textDecoration: 'none' }}>
-              S'inscrire
-            </Link>
-          </p>
+                    <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748B', marginTop: '20px' }}>
+                        Pas encore de compte ?{' '}
+                        <Link to="/register" style={{ color: '#4F8EF7', fontWeight: '700' }}>
+                            S'inscrire
+                        </Link>
+                    </p>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
+      
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import {can} from '../utils/Permissions'
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import styles from './Css/PostCard.module.css';
@@ -16,6 +17,7 @@ export default function PostCard({ post, onDeleted }) {
    const [posting, setPosting]           = useState(false);
 
   const isOwner = post.author?._id?.toString() === user?._id?.toString();
+  const canDelete = isOwner || can(user, 'posts', 'deleteOthers');
 
    // ── Like ────────────────────────────────────────────────
   const handleLike = async () => {
@@ -83,7 +85,7 @@ export default function PostCard({ post, onDeleted }) {
             {post.author.department} · {timeAgo}
           </div>
         </div>
-        {isOwner && (
+        {canDelete && (
           <button onClick={handleDelete} className={styles.deleteBtn}>
             ✕
           </button>

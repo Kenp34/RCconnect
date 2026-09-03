@@ -16,3 +16,19 @@
   border-radius: 16px;
   border: 1px solid #0f0f0f;
 }
+
+@media (max-width: 768px) {
+  .feed {
+    padding: 0 12px;
+    gap: 14px;
+  }
+}
+
+/* Le padding existant .feed n'en avait pas */
+/* --- POINT DE RUPTURE : MOBILE --- */
+@media (max-width: 480px) {
+  .feed {
+    gap: 10px;
+    padding: 0 15px
+  }
+}

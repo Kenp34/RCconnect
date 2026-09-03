@@ -3,6 +3,7 @@ import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import EmptyChatState from './EmptyChatState';
 import styles from './ChatArea.module.css';
+import {getAvatarUrl } from '../../helpers/rooms.js';
 
 const COLORS = [
   'linear-gradient(135deg,#4F8EF7,#A78BFA)',
@@ -20,7 +21,10 @@ export default function ChatArea({
   onTyping,
   typingUser,
   onDeleteMessage,
-  onEditMessage
+  onEditMessage,
+  replyingTo,
+  onReply,
+  onCancelReply
 }) {
   const messagesEndRef = useRef(null);
 
@@ -44,9 +48,8 @@ export default function ChatArea({
         <div className={styles.userInfo}>
           <div className={styles.avatar}>
             {activeConversation.avatar ? (
-              <img src={activeConversation.avatar}
-                alt={activeConversation.name}
-                className={styles.avatarImg} />
+             <img src={getAvatarUrl(activeConversation.avatar)} alt={activeConversation.name}
+                 className={styles.avatarImg} />
             ) : (
               <div className={styles.avatarPlaceholder}
                 style={{ background: COLORS[colorIndex] }}>
@@ -99,6 +102,7 @@ export default function ChatArea({
                   currentUser={currentUser}
                   onDelete={onDeleteMessage}
                   onEdit={onEditMessage}
+                  onReply={onReply}
                 />
               );
             })}
@@ -118,7 +122,7 @@ export default function ChatArea({
       </div>
 
       {/* Input */}
-      <MessageInput onSendMessage={onSendMessage} onTyping={onTyping} />
+      <MessageInput onSendMessage={onSendMessage} onTyping={onTyping} replyingTo={replyingTo} onCancelReply={onCancelReply} />
     </div>
   );
 }

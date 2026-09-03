@@ -200,3 +200,16 @@
 .empty small {
   font-size: 12px;
 }
+
+@media (max-width: 480px) {
+  .conversationItem {
+    padding: 10px 12px;
+  }
+  .avatarWrapper {
+    width: 44px;
+    height: 44px;
+  }
+  .lastMessage {
+    font-size: 12px;
+  }
+}

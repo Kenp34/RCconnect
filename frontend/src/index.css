@@ -10,7 +10,20 @@
   --border: #e2e8f0;
   --sent-bg: #667eea;
   --received-bg: #f1f5f9;
+   /* Breakpoints */
+  --breakpoint-mobile: 480px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1024px;
+  --breakpoint-large: 1200px;
+
+  /* Espacements */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
 }
+
 
 * {
   margin: 0;

@@ -41,6 +41,13 @@
   letter-spacing: -0.3px;
 }
 
+.navLink{
+   font-size: 13px;
+  font-weight: 700;
+  color: #E2E8F0;
+  letter-spacing: -0.3px;
+}
+
 /* ========== RECHERCHE ========== */
 .searchContainer {
   flex: 1;
@@ -233,5 +240,15 @@
 @media (max-width: 480px) {
   .searchContainer {
     display: none;
+  }
+}
+
+/* --- PETIT MOBILE (0 - 480px) --- */
+@media (max-width: 480px) {
+  .searchContainer {
+    max-width: 120px;
+  }
+  .actionBtn:not(.profileBtn):not(.logoutBtn) {
+    display: none; /* Cache Messages etc. pour gagner de l'espace */
   }
 }

@@ -17,3 +17,9 @@ export const formatMessageTime = (timestamp) => {
   }
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 };
+
+export function getAvatarUrl(avatarPath) {
+  if (!avatarPath) return null;
+  const base = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5001';
+  return `${base}${avatarPath}`;
+}
