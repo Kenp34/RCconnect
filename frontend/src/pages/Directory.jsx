@@ -31,10 +31,13 @@ export default function Directory() {
     headers: { Authorization: `Bearer ${token}` }
   };
 
+
+  const getProfileIdentifier = (user)=> user?.username || user?._id
   const showMessage = (text, type = 'success') => {
     setFollowMessage({ show: true, text, type });
     setTimeout(() => setFollowMessage({ show: false, text: '', type: '' }), 3000);
   };
+
 
   // Récupérer tous les utilisateurs
   useEffect(() => {
@@ -134,14 +137,14 @@ export default function Directory() {
               <div key={user._id} className={styles.suggestionCard}>
                 <div
                   className={styles.suggestionAvatar}
-                  onClick={() => navigate(`/profile/${user._id}`)}
+                  onClick={() => navigate(`/profile/${getProfileIdentifier(user)}`)}
                 >
                   {user.name?.[0]?.toUpperCase()}
                 </div>
 
                 <div
                   className={styles.suggestionInfo}
-                  onClick={() => navigate(`/profile/${user._id}`)}
+                  onClick={() => navigate(`/profile/${getProfileIdentifier(user)}`)}
                 >
                   <p className={styles.suggestionName}>{user.name}</p>
 
@@ -225,14 +228,14 @@ export default function Directory() {
                       style={{
                         background: COLORS[index % COLORS.length],
                       }}
-                      onClick={() => navigate(`/profile/${user._id}`)}
+                      onClick={() => navigate(`/profile/${getProfileIdentifier(user)}`)}
                     >
                       {user.name?.[0]?.toUpperCase()}
                     </div>
 
                     <div
                       className={styles.memberInfo}
-                      onClick={() => navigate(`/profile/${user._id}`)}
+                      onClick={() => navigate(`/profile/${getProfileIdentifier(user)}`)}
                     >
                       <h3 className={styles.memberName}>{user.name}</h3>
 
@@ -257,7 +260,7 @@ export default function Directory() {
                       className={styles.profileButton}
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/profile/${user._id}`);
+                        navigate(`/profile/${getProfileIdentifier(user)}`);
                       }}
                     >
                       Voir profil

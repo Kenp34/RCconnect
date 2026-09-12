@@ -20,6 +20,8 @@ export default function Groups() {
   const [formError, setFormError] = useState('');
   const [creating, setCreating] = useState(false);
 
+  const getProfileIdentifier = (group)=> group?.username || group?._id
+
   // ✅ fetchGroups directement dans useEffect
   useEffect(() => {
     const fetchGroups = async () => {
@@ -175,7 +177,7 @@ export default function Groups() {
             <div
               key={group._id}
               className={styles.card}
-              onClick={() => navigate(`/groups/${group._id}`)}>
+              onClick={() => navigate(`/groups/${getProfileIdentifier(group)}`)}>
 
               {/* Avatar */}
               <div className={styles.cardAvatar}

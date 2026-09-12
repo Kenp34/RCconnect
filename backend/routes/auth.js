@@ -2,6 +2,7 @@ const router = require('express').Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+const { authLimiter } = require('../middleware/rateLimiter');
 
 // Générer JWT
 const generateToken = (id) => {
@@ -13,7 +14,46 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 // @desc    Inscription utilisateur
 // @access  Public
-router.post('/register', async (req, res) => {
+
+const { generateUniqueUsername } = require('../utils/generateUsername');
+
+router.post('/register', authLimiter, async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: 'Cet email est déjà utilisé' });
+    }
+
+    const userCount = await User.countDocuments();
+    const role = userCount === 0 ? 'admin' : 'employe';
+    const username = await generateUniqueUsername(name, User);
+
+    const user = await User.create({ ...req.body, role, username });
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      avatar: user.avatar,
+      token
+    });
+  } catch (error) {
+    console.error(error);
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ message: messages.join(', ') });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+/*
+router.post('/register', authLimiter, async (req, res) => {
   try {
     const { name, email, password } = req.body;
     // Vérifier si l'utilisateur existe déjà
@@ -32,7 +72,7 @@ router.post('/register', async (req, res) => {
                 email,
                 password,
                 role
-            });*/
+            });
     // Générer le token
     const token = generateToken(user._id);
 
@@ -55,10 +95,10 @@ router.post('/register', async (req, res) => {
   }
 });
 
-
+*/
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });

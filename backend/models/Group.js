@@ -1,6 +1,15 @@
 const mongoose = require('mongoose');
 
 const GroupSchema = new mongoose.Schema({
+
+   username: {
+        type: String,
+        unique: true,
+        index: true,
+        lowercase: true,
+        trim: true,
+    },
+    
   name: {
     type: String,
     required: [true, 'Le nom est obligatoire'],

@@ -27,7 +27,7 @@ const DEPARTMENTS = [
 ];
 
 export default function Profile() {
-  const { id } = useParams();
+  const { identifier } = useParams();
   const { user: me, token } = useAuth();
   const navigate = useNavigate();
 
@@ -44,7 +44,14 @@ export default function Profile() {
     type: '',
   });
 
-  const isMe = !id || id === me?._id;
+  // ✅ Détection de "mon profil" :
+  // - soit l'URL est /profile/me
+  // - soit l'identifier correspond à mon _id
+  // - soit l'identifier correspond à mon username
+  const isMe =
+    identifier === 'me' ||
+    identifier === me?._id ||
+    identifier === me?.username;
 
   const axiosConfig = {
     headers: {
@@ -53,18 +60,9 @@ export default function Profile() {
   };
 
   const showMessage = (text, type = 'success') => {
-    setFollowMessage({
-      show: true,
-      text,
-      type,
-    });
-
+    setFollowMessage({ show: true, text, type });
     setTimeout(() => {
-      setFollowMessage({
-        show: false,
-        text: '',
-        type: '',
-      });
+      setFollowMessage({ show: false, text: '', type: '' });
     }, 3000);
   };
 
@@ -72,29 +70,30 @@ export default function Profile() {
   // CHARGEMENT PROFIL
   // =========================
   useEffect(() => {
+   
+
     const fetchProfileAndPosts = async () => {
       setLoading(true);
-
       try {
-        const endpoint = isMe ? '/users/me' : `/users/${id}`;
+        const endpoint = isMe ? '/users/me' : `/users/${identifier}`;
+        console.log('Appel API :', `${API}${endpoint}`);
 
         const { data: profData } = await axios.get(
           `${API}${endpoint}`,
           axiosConfig
         );
-
         setProfile(profData);
 
         if (!isMe && me) {
           setIsFollowing(
             profData.followers?.some(
-              (f) =>
-                (f._id || f).toString() === me._id?.toString()
+              (f) => (f._id || f).toString() === me._id?.toString()
             )
           );
         }
 
-        const userId = isMe ? me?._id : id;
+        // On utilise l'_id réel pour récupérer les posts
+        const userId = isMe ? me?._id : profData._id;
 
         if (userId) {
           try {
@@ -102,7 +101,6 @@ export default function Profile() {
               `${API}/posts/user/${userId}`,
               axiosConfig
             );
-
             setPosts(userPosts || []);
           } catch (postErr) {
             console.error('Erreur chargement posts:', postErr);
@@ -117,20 +115,20 @@ export default function Profile() {
       }
     };
 
-    if (token && (me || isMe)) {
-      fetchProfileAndPosts();
-    }
-  }, [id, me?._id, isMe, token]);
+    if (token && me) fetchProfileAndPosts();
+  }, [identifier, me?._id, isMe, token]);
 
+ 
   // =========================
   // FOLLOW / UNFOLLOW
   // =========================
   const handleFollow = async () => {
-    if (!id || !me) return;
+    if (!profile?._id || !me) return;
 
     try {
+      // ✅ On utilise l'_id du profil chargé (fiable)
       const { data } = await axios.post(
-        `${API}/users/${id}/follow`,
+        `${API}/users/${profile._id}/follow`,
         {},
         axiosConfig
       );
@@ -139,22 +137,15 @@ export default function Profile() {
 
       setProfile((prev) => {
         if (!prev) return prev;
-
         return {
           ...prev,
           followers: data.following
             ? [
                 ...(prev.followers || []),
-                {
-                  _id: me._id,
-                  name: me.name,
-                  avatar: me.avatar,
-                },
+                { _id: me._id, name: me.name, avatar: me.avatar },
               ]
             : (prev.followers || []).filter(
-                (f) =>
-                  (f._id || f).toString() !==
-                  me._id.toString()
+                (f) => (f._id || f).toString() !== me._id.toString()
               ),
         };
       });
@@ -166,10 +157,8 @@ export default function Profile() {
       );
     } catch (err) {
       console.error('Erreur follow:', err);
-
       showMessage(
-        err.response?.data?.message ||
-          'Erreur lors du follow',
+        err.response?.data?.message || 'Erreur lors du follow',
         'error'
       );
     }
@@ -180,7 +169,6 @@ export default function Profile() {
   // =========================
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
-
     const formData = new FormData(e.target);
 
     try {
@@ -196,22 +184,11 @@ export default function Profile() {
 
       setProfile(data);
       setEditSuccess(true);
-
-      setTimeout(() => {
-        setEditSuccess(false);
-      }, 3000);
-
+      setTimeout(() => setEditSuccess(false), 3000);
       setActiveTab('posts');
-
-      showMessage(
-        '✅ Profil mis à jour avec succès !',
-        'success'
-      );
+      showMessage('✅ Profil mis à jour avec succès !', 'success');
     } catch (err) {
-      showMessage(
-        'Erreur: ' + err.message,
-        'error'
-      );
+      showMessage('Erreur: ' + err.message, 'error');
     }
   };
 
@@ -220,52 +197,34 @@ export default function Profile() {
   // =========================
   const handleAvatarUpload = async (e) => {
     const file = e.target.files[0];
-
     if (!file) return;
 
     setAvatarLoading(true);
-
     try {
       const fd = new FormData();
-
       fd.append('avatar', file);
 
-      const { data } = await axios.put(
-        `${API}/users/me/avatar`,
-        fd,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const { data } = await axios.put(`${API}/users/me/avatar`, fd, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       setProfile(data);
-
-      showMessage(
-        '✅ Avatar mis à jour !',
-        'success'
-      );
+      showMessage('✅ Avatar mis à jour !', 'success');
     } catch (err) {
-      showMessage(
-        'Erreur upload avatar: ' + err.message,
-        'error'
-      );
+      showMessage('Erreur upload avatar: ' + err.message, 'error');
     } finally {
       setAvatarLoading(false);
     }
   };
 
   const handlePostDeleted = (postId) => {
-    setPosts((prev) =>
-      prev.filter((p) => p._id !== postId)
-    );
+    setPosts((prev) => prev.filter((p) => p._id !== postId));
   };
 
-  const goToCreatePost = () => {
-    navigate('/create-post');
-  };
+  const goToCreatePost = () => navigate('/create-post');
 
   // =========================
   // LOADING
@@ -283,24 +242,15 @@ export default function Profile() {
   // =========================
   if (!profile) {
     return (
-      <div className={styles.notFound}>
-        Utilisateur introuvable
-      </div>
+      <div className={styles.notFound}>Utilisateur introuvable</div>
     );
   }
 
   const color =
-    COLORS[
-      (profile.name?.charCodeAt(0) || 0) %
-        COLORS.length
-    ];
+    COLORS[(profile.name?.charCodeAt(0) || 0) % COLORS.length];
 
   return (
     <main className={styles.profilePage}>
-
-      {/* =========================
-          NOTIFICATION
-      ========================== */}
       {followMessage.show && (
         <div
           className={`${styles.notification} ${
@@ -313,36 +263,20 @@ export default function Profile() {
         </div>
       )}
 
-      {/* =========================
-          CARTE PROFIL
-      ========================== */}
       <section className={styles.profileCard}>
-
-        {/* Couverture */}
-        <div
-          className={styles.cover}
-          style={{ background: color }}
-        />
+        <div className={styles.cover} style={{ background: color }} />
 
         <div className={styles.profileBody}>
-
-          {/* Avatar + action */}
           <div className={styles.profileTop}>
-
             <div className={styles.avatarWrapper}>
               <div
                 className={styles.avatar}
                 style={{
-                  background: profile.avatar
-                    ? 'transparent'
-                    : color,
+                  background: profile.avatar ? 'transparent' : color,
                 }}
               >
                 {profile.avatar ? (
-                  <img
-                    src={`${BASE}${profile.avatar}`}
-                    alt="Avatar"
-                  />
+                  <img src={`${BASE}${profile.avatar}`} alt="Avatar" />
                 ) : (
                   profile.name?.[0]?.toUpperCase()
                 )}
@@ -351,7 +285,6 @@ export default function Profile() {
               {isMe && (
                 <label className={styles.avatarButton}>
                   {avatarLoading ? '⏳' : '📷'}
-
                   <input
                     type="file"
                     accept="image/*"
@@ -361,174 +294,90 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Action */}
             <div className={styles.profileAction}>
               {isMe ? (
                 <button
                   className={styles.secondaryButton}
-                  onClick={() =>
-                    setActiveTab('edit')
-                  }
+                  onClick={() => setActiveTab('edit')}
                 >
                   ✏️ <span>Modifier le profil</span>
                 </button>
               ) : (
                 <button
                   className={
-                    isFollowing
-                      ? styles.followingButton
-                      : styles.followButton
+                    isFollowing ? styles.followingButton : styles.followButton
                   }
                   onClick={handleFollow}
                 >
-                  {isFollowing
-                    ? '✓ Suivi'
-                    : '+ Suivre'}
+                  {isFollowing ? '✓ Suivi' : '+ Suivre'}
                 </button>
               )}
             </div>
           </div>
 
-          {/* Informations */}
           <div className={styles.profileInfo}>
-
             <h1>{profile.name}</h1>
-
             {profile.department && (
-              <div className={styles.department}>
-                🏢 {profile.department}
-              </div>
+              <div className={styles.department}>🏢 {profile.department}</div>
             )}
-
-            {profile.bio && (
-              <p className={styles.bio}>
-                {profile.bio}
-              </p>
-            )}
-
+            {profile.bio && <p className={styles.bio}>{profile.bio}</p>}
           </div>
 
-          {/* =========================
-              STATISTIQUES
-          ========================== */}
           <div className={styles.stats}>
-
-            <button
-              className={styles.stat}
-              onClick={() =>
-                setActiveTab('posts')
-              }
-            >
+            <button className={styles.stat} onClick={() => setActiveTab('posts')}>
               <strong>{posts.length}</strong>
               <span>Publications</span>
             </button>
-
             <button
               className={styles.stat}
-              onClick={() =>
-                setActiveTab('followers')
-              }
+              onClick={() => setActiveTab('followers')}
             >
-              <strong>
-                {profile.followers?.length || 0}
-              </strong>
+              <strong>{profile.followers?.length || 0}</strong>
               <span>Abonnés</span>
             </button>
-
             <button
               className={styles.stat}
-              onClick={() =>
-                setActiveTab('following')
-              }
+              onClick={() => setActiveTab('following')}
             >
-              <strong>
-                {profile.following?.length || 0}
-              </strong>
+              <strong>{profile.following?.length || 0}</strong>
               <span>Abonnements</span>
             </button>
-
           </div>
-
         </div>
       </section>
 
-      {/* =========================
-          ONGLETS
-      ========================== */}
       <nav className={styles.tabs}>
-
         <button
-          className={
-            activeTab === 'posts'
-              ? styles.activeTab
-              : styles.tab
-          }
+          className={activeTab === 'posts' ? styles.activeTab : styles.tab}
           onClick={() => setActiveTab('posts')}
         >
-          📄 Publications
-          <span>({posts.length})</span>
+          📄 Publications <span>({posts.length})</span>
         </button>
-
         <button
-          className={
-            activeTab === 'followers'
-              ? styles.activeTab
-              : styles.tab
-          }
-          onClick={() =>
-            setActiveTab('followers')
-          }
+          className={activeTab === 'followers' ? styles.activeTab : styles.tab}
+          onClick={() => setActiveTab('followers')}
         >
-          👥 Abonnés
-          <span>
-            ({profile.followers?.length || 0})
-          </span>
+          👥 Abonnés <span>({profile.followers?.length || 0})</span>
         </button>
-
         <button
-          className={
-            activeTab === 'following'
-              ? styles.activeTab
-              : styles.tab
-          }
-          onClick={() =>
-            setActiveTab('following')
-          }
+          className={activeTab === 'following' ? styles.activeTab : styles.tab}
+          onClick={() => setActiveTab('following')}
         >
-          📌 Abonnements
-          <span>
-            ({profile.following?.length || 0})
-          </span>
+          📌 Abonnements <span>({profile.following?.length || 0})</span>
         </button>
-
         {isMe && (
           <button
-            className={
-              activeTab === 'edit'
-                ? styles.activeTab
-                : styles.tab
-            }
-            onClick={() =>
-              setActiveTab('edit')
-            }
+            className={activeTab === 'edit' ? styles.activeTab : styles.tab}
+            onClick={() => setActiveTab('edit')}
           >
             ✏️ Modifier
           </button>
         )}
-
       </nav>
 
-      {/* =========================
-          CONTENU
-      ========================== */}
       <section className={styles.contentCard}>
-
-        {/* =========================
-            PUBLICATIONS
-        ========================== */}
         {activeTab === 'posts' && (
           <div>
-
             {isMe && (
               <button
                 className={styles.createPostButton}
@@ -537,9 +386,7 @@ export default function Profile() {
                 ✏️ Créer une publication
               </button>
             )}
-
             <div className={styles.postsList}>
-
               {posts.length === 0 ? (
                 <div className={styles.emptyState}>
                   <div>📭</div>
@@ -554,43 +401,30 @@ export default function Profile() {
                   />
                 ))
               )}
-
             </div>
-
           </div>
         )}
 
-        {/* =========================
-            ABONNÉS
-        ========================== */}
         {activeTab === 'followers' && (
           <UserList
             users={profile.followers}
             emptyMessage="Aucun abonné"
             navigate={navigate}
+            me={me}
           />
         )}
 
-        {/* =========================
-            ABONNEMENTS
-        ========================== */}
         {activeTab === 'following' && (
           <UserList
             users={profile.following}
             emptyMessage="Aucun abonnement"
             navigate={navigate}
+            me={me}
           />
         )}
 
-        {/* =========================
-            MODIFICATION
-        ========================== */}
         {activeTab === 'edit' && isMe && (
-          <form
-            onSubmit={handleUpdateProfile}
-            className={styles.editForm}
-          >
-
+          <form onSubmit={handleUpdateProfile} className={styles.editForm}>
             {editSuccess && (
               <div className={styles.successMessage}>
                 ✅ Profil mis à jour !
@@ -599,33 +433,15 @@ export default function Profile() {
 
             <div className={styles.formGroup}>
               <label>Nom</label>
-
-              <input
-                name="name"
-                defaultValue={profile.name}
-                placeholder="Nom"
-                required
-              />
+              <input name="name" defaultValue={profile.name} required />
             </div>
 
             <div className={styles.formGroup}>
               <label>Département</label>
-
-              <select
-                name="department"
-                defaultValue={
-                  profile.department || ''
-                }
-              >
-                <option value="">
-                  Sélectionner un département
-                </option>
-
+              <select name="department" defaultValue={profile.department || ''}>
+                <option value="">Sélectionner un département</option>
                 {DEPARTMENTS.map((department) => (
-                  <option
-                    key={department}
-                    value={department}
-                  >
+                  <option key={department} value={department}>
                     {department}
                   </option>
                 ))}
@@ -634,7 +450,6 @@ export default function Profile() {
 
             <div className={styles.formGroup}>
               <label>Biographie</label>
-
               <textarea
                 name="bio"
                 defaultValue={profile.bio}
@@ -643,18 +458,12 @@ export default function Profile() {
               />
             </div>
 
-            <button
-              type="submit"
-              className={styles.saveButton}
-            >
+            <button type="submit" className={styles.saveButton}>
               💾 Sauvegarder
             </button>
-
           </form>
         )}
-
       </section>
-
     </main>
   );
 }
@@ -662,12 +471,7 @@ export default function Profile() {
 /* =====================================================
    LISTE UTILISATEURS
 ===================================================== */
-
-function UserList({
-  users,
-  emptyMessage,
-  navigate,
-}) {
+function UserList({ users, emptyMessage, navigate, me }) {
   if (!users || users.length === 0) {
     return (
       <div className={styles.emptyState}>
@@ -680,32 +484,26 @@ function UserList({
   return (
     <div className={styles.userList}>
       {users.map((user, index) => {
+        const avatarColor = COLORS[index % COLORS.length];
 
-        const avatarColor =
-          COLORS[index % COLORS.length];
+        // ✅ On navigue TOUJOURS avec un username (jamais "me")
+        const targetUsername =
+          user._id === me?._id
+            ? me?.username || user.username
+            : user.username || user._id;
 
         return (
           <button
             key={user._id}
             className={styles.userItem}
-            onClick={() =>
-              navigate(`/profile/${user._id}`)
-            }
+            onClick={() => navigate(`/profile/${targetUsername}`)}
           >
-
             <div
               className={styles.userAvatar}
-              style={{
-                background: user.avatar
-                  ? 'transparent'
-                  : avatarColor,
-              }}
+              style={{ background: user.avatar ? 'transparent' : avatarColor }}
             >
               {user.avatar ? (
-                <img
-                  src={`${BASE}${user.avatar}`}
-                  alt=""
-                />
+                <img src={`${BASE}${user.avatar}`} alt="" />
               ) : (
                 user.name?.[0]?.toUpperCase()
               )}
@@ -713,18 +511,10 @@ function UserList({
 
             <div className={styles.userInfo}>
               <strong>{user.name}</strong>
-
-              {user.department && (
-                <span>
-                  {user.department}
-                </span>
-              )}
+              {user.department && <span>{user.department}</span>}
             </div>
 
-            <span className={styles.userArrow}>
-              ›
-            </span>
-
+            <span className={styles.userArrow}>›</span>
           </button>
         );
       })}

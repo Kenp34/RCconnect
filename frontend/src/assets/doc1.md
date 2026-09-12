@@ -1,6 +1,9 @@
 Voici la version **complète et corrigée** de `GroupChat.jsx` avec la fonctionnalité **Reply** entièrement intégrée :
 
----
+---  
+
+New-NetFirewallRule -DisplayName "RCconnect Frontend" -Direction Inbound -LocalPort 5173 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "RCconnect Backend" -Direction Inbound -LocalPort 5001 -Protocol TCP -Action Allow
 
 ## 📄 frontend/src/pages/GroupChat.jsx (COMPLET AVEC REPLY)
 

@@ -4,6 +4,7 @@ const { protect } = require('../middleware/auth');
 const Group = require('../models/Group');
 const GroupMessage = require('../models/GroupMessage');
 const PERMISSIONS = require('../config/permissions');
+const { generateUniqueGroupUsername } = require('../utils/generateUniqueGroupUsername');
 
 // ── GET / — Liste groupes ──────────────────────────────────
 router.get('/', protect, async (req, res) => {
@@ -39,7 +40,59 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+
+router.get('/by-username/:username', protect, async (req, res) => {
+  try {
+    const { username } = req.params;
+    if (!username) return res.status(400).json({ message: 'Username manquant' });
+
+    const group = await Group.findOne({ username: username.toLowerCase() })
+      .select('_id name username');
+
+    if (!group) return res.status(404).json({ message: 'Groupe introuvable' });
+    res.json(group);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 // ── GET /:id — Détail groupe ───────────────────────────────
+
+
+router.get('/:identifier', protect, async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    if (!identifier || identifier === 'undefined') {
+      return res.status(400).json({ message: 'Identifiant manquant' });
+    }
+
+    const query = mongoose.isValidObjectId(identifier)
+      ? { _id: identifier }
+      : { username: identifier.toLowerCase() };
+
+    const group = await Group.findOne(query)
+      .populate('createdBy', 'name avatar username')
+      .populate('members.user', 'name avatar department username');
+
+    if (!group) return res.status(404).json({ message: 'Groupe introuvable' });
+
+    const me = group.members.find(
+      (m) => m.user?._id?.toString() === req.user._id.toString()
+    );
+    const isSystemAdmin = !!PERMISSIONS[req.user.role]?.groups?.deleteGroup;
+
+    res.json({
+      ...group.toObject(),
+      isMember: !!me,
+      isAdmin: me?.role === 'admin' || isSystemAdmin,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/*
 router.get('/:id', protect, async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id))
@@ -66,7 +119,7 @@ router.get('/:id', protect, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
+*/
 // ── POST / — Créer groupe ──────────────────────────────────
 router.post('/', protect, async (req, res) => {
   try {
@@ -79,16 +132,21 @@ router.post('/', protect, async (req, res) => {
     if (exists)
       return res.status(400).json({ message: 'Ce nom existe déjà' });
 
+
+    const username = await generateUniqueGroupUsername(name.trim())
+    console.log(username)
     const group = await Group.create({
       name: name.trim(),
+      username,
       description: description?.trim() || '',
       isPrivate: isPrivate || false,
       createdBy: req.user._id,
       members: [{ user: req.user._id, role: 'admin' }],
     });
+     console.log(username)
 
-    await group.populate('members.user', 'name avatar department');
-    await group.populate('createdBy', 'name');
+    await group.populate('members.user', 'name avatar department username');
+    await group.populate('createdBy', 'name username');
 
     res.status(201).json({
       ...group.toObject(),
@@ -309,9 +367,9 @@ router.get('/:id/messages', protect, async (req, res) => {
 
     // ✅ Marquer les messages comme lus
     await GroupMessage.updateMany(
-      { 
-        group: req.params.id, 
-        readBy: { $ne: req.user._id } 
+      {
+        group: req.params.id,
+        readBy: { $ne: req.user._id }
       },
       { $addToSet: { readBy: req.user._id } }
     );
@@ -344,13 +402,14 @@ router.post('/:id/messages', protect, async (req, res) => {
 
     // ✅ Vérifier le message cité
     if (replyToId) {
-      const original = await GroupMessage.findOne({ 
-        _id: replyToId, 
-        group: req.params.id 
+      const original = await GroupMessage.findOne({
+        _id: replyToId,
+        group: req.params.id,
+        deleted: { $ne: true }
       });
       if (!original) {
-        return res.status(400).json({ 
-          message: 'Message cité introuvable dans ce groupe' 
+        return res.status(400).json({
+          message: 'Message cité introuvable dans ce groupe'
         });
       }
     }
@@ -366,7 +425,8 @@ router.post('/:id/messages', protect, async (req, res) => {
 
     // ✅ Peupler le sender
     await message.populate('sender', 'name avatar department');
-    
+    await message.populate('replyTo', 'content sender deleted');
+
     // ✅ Peupler le replyTo si présent
     if (message.replyTo) {
       await message.populate({

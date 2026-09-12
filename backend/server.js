@@ -25,6 +25,18 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Rendre io accessible dans les routes
 app.set('io', io);
 
+//ratelimit
+const { generalLimiter } = require('./middleware/rateLimiter');
+const helmetConfig = require('./middleware/security');
+
+// ✅ Sécurité — toujours en tout premier, avant tout le reste
+app.use(helmetConfig);
+app.use(cors());
+app.use(express.json());
+
+app.use('/api/', generalLimiter); // ← s'applique à toutes les routes /api/*
+
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
@@ -38,6 +50,7 @@ require('./socket/index')(io);
 
 
 // Connexion MongoDB
+/*
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     server.listen(5001, () => {
@@ -46,3 +59,17 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch(err => console.error('❌ Erreur MongoDB:', err));
 
+*/
+
+// Connexion MongoDB
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => {
+        // ⚠️ ICI LA MODIFICATION IMPORTANTE
+        const PORT = process.env.PORT || 5001;
+        server.listen(PORT, '0.0.0.0', () => {  // ← Écoute sur toutes les IP
+            console.log(`✅ Server démarré sur http://0.0.0.0:${PORT}`);
+            console.log(`📱 Accès local : http://localhost:${PORT}`);
+            console.log(`📱 Accès réseau : http://192.168.1.171:${PORT}`);
+        });
+    })
+    .catch(err => console.error('❌ Erreur MongoDB:', err));

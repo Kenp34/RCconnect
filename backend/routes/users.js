@@ -32,8 +32,8 @@ router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
       .select('-password')
-      .populate('following', 'name avatar')
-      .populate('followers', 'name avatar');
+      .populate('following', 'name avatar username')
+      .populate('followers', 'name avatar username');
 
     if (!user) return res.status(404).json({ message: 'Utilisateur introuvable' });
     res.json(user);
@@ -41,7 +41,7 @@ router.get('/me', protect, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
+/*
 // GET /api/users/:id - Voir le profil d'un utilisateur
 router.get('/:id', protect, async (req, res) => {
   try {
@@ -55,7 +55,32 @@ router.get('/:id', protect, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+*/
 
+const mongoose = require('mongoose');
+
+// GET /api/users/:identifier  (username OU _id, pour compatibilité)
+router.get('/:identifier', protect, async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    console.log("identifier :" , identifier)
+    const query = mongoose.isValidObjectId(identifier)
+      ? { _id: identifier }
+      : { username: identifier.toLowerCase() };
+
+      console.log(query)
+    const user = await User.findOne(query)
+      .select('-password')
+      .populate('following', 'name avatar username')
+      .populate('followers', 'name avatar username');
+//.populate('following', 'name avatar')
+    //   .populate('followers', 'name avatar');
+    if (!user) return res.status(404).json({ message: 'Utilisateur introuvable' });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 // PUT /api/users/me - Modifier son propre profil
 router.put('/me', protect, async (req, res) => {
   try {

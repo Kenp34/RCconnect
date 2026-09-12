@@ -38,21 +38,28 @@ export default function App() {
             </ProtectedRoute>
           } />
 
-          <Route path="/profile/:id" element={
+          {/* <Route path="/profile/:id" element={
             <ProtectedRoute>
               <Layout>
                 <Profile />
               </Layout>
             </ProtectedRoute>
-          } />
+          } /> */}
 
-          <Route path="/profile/me" element={
+        
+           {/* ✅ Route unique pour le profil : accepte un _id OU un username */}
+          <Route path="/profile/:identifier" element={
+            <ProtectedRoute>
+              <Layout><Profile /></Layout>
+            </ProtectedRoute>
+          } />
+          {/* <Route path="/profile/me" element={
             <ProtectedRoute>
               <Layout>
                 <Profile />
               </Layout>
             </ProtectedRoute>
-          } />
+          } /> */}
 
           <Route path="/messages" element={
             <ProtectedRoute>
@@ -81,36 +88,43 @@ export default function App() {
             </ProtectedRoute>
           } />
 
-          {/* 👥 ROUTES POUR LES GROUPES */}
+          {/* 👥 ROUTES POUR LES GROUPES
           <Route path="/groups/:id" element={
             <ProtectedRoute>
               <Layout>
                 <GroupChat />
               </Layout>
             </ProtectedRoute>
+          } /> */}
+           /* 👥 ROUTES POUR LES GROUPES
+          <Route path="/groups/:identifier" element={
+            <ProtectedRoute>
+              <Layout>
+                <GroupChat />
+              </Layout>
+            </ProtectedRoute>
           } />
-
           {/* Redirection 404 */}
           <Route path="*" element={<Navigate to="/feed" replace />} />
 
-   {/* ✅ Routes d'administration avec AdminLayout */}
+          {/* ✅ Routes d'administration avec AdminLayout */}
           <Route path="/admin" element={
             <ProtectedRoute>
               <AdminLayout />
             </ProtectedRoute>
           }>
             <Route index element={<AdminPanel />} />
-           
+
           </Route>
 
-{/* ✅ Routes d'administration avec AdminLayout */}
+          {/* ✅ Routes d'administration avec AdminLayout */}
           <Route path="/manager" element={
             <ProtectedRoute>
               <AdminLayout />
             </ProtectedRoute>
           }>
             <Route index element={<Manager />} />
-           
+
           </Route>
           {/* <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} /> */}
           {/* <Route path="/manager" element={<ManageRoute><Manager /></ManageRoute>} /> */}

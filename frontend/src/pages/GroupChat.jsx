@@ -18,11 +18,12 @@ const COLORS = [
 ];
 
 export default function GroupChat() {
-  const { id } = useParams();
+  const { identifier } = useParams(); // ✅ username OU _id (depuis l'URL)
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const [group, setGroup] = useState(null);
+  const [groupId, setGroupId] = useState(null); // ✅ _id réel du groupe
   const [messages, setMessages] = useState([]);
   const [members, setMembers] = useState([]);
   const [input, setInput] = useState('');
@@ -38,8 +39,6 @@ export default function GroupChat() {
   const typingTimeoutRef = useRef(null);
   const [editModal, setEditModal] = useState({ open: false, messageId: null, content: '' });
   const [deleteModal, setDeleteModal] = useState({ open: false, messageId: null });
-
-  // ✅ État pour le REPLY
   const [replyingTo, setReplyingTo] = useState(null);
 
   const { joinGroupRoom, leaveGroupRoom, sendTypingGroup, registerCallbacks } = useSocket();
@@ -49,158 +48,200 @@ export default function GroupChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ✅ Callbacks socket
+  // ✅ Callbacks socket (on utilise groupId si dispo, sinon identifier)
   useEffect(() => {
+    const roomKey = groupId || identifier;
+
     registerCallbacks({
       onNewGroupMessage: (msg) => {
         if (String(msg.sender?._id) === String(user._id)) return;
-        if (String(msg.group) === id || String(msg.group?._id) === id) {
-          setMessages(prev => {
-            return prev.some(m => m._id === msg._id) ? prev : [...prev, msg];
+        if (
+          String(msg.group) === roomKey ||
+          String(msg.group?._id) === roomKey ||
+          String(msg.group?._id) === groupId
+        ) {
+          setMessages((prev) => {
+            return prev.some((m) => m._id === msg._id) ? prev : [...prev, msg];
           });
         }
       },
       onGroupMessageEdited: ({ messageId, content, editedAt }) => {
-        setMessages(prev => prev.map(m =>
-          m._id === messageId ? { ...m, content, edited: true, editedAt } : m
-        ));
+        setMessages((prev) =>
+          prev.map((m) =>
+            m._id === messageId ? { ...m, content, edited: true, editedAt } : m
+          )
+        );
       },
       onGroupMessageDeleted: ({ messageId }) => {
-        setMessages(prev => prev.map(m =>
-          m._id === messageId ? { ...m, deleted: true, content: '[Message supprimé]' } : m
-        ));
+        setMessages((prev) =>
+          prev.map((m) =>
+            m._id === messageId ? { ...m, deleted: true, content: '[Message supprimé]' } : m
+          )
+        );
       },
       onTypingGroup: (userId, userName, isTyping) => {
         if (userId === user._id) return;
-        setTypingUsers(prev => {
+        setTypingUsers((prev) => {
           if (isTyping) {
-            if (prev.find(t => t.id === userId)) return prev;
+            if (prev.find((t) => t.id === userId)) return prev;
             return [...prev, { id: userId, name: userName }];
           }
-          return prev.filter(t => t.id !== userId);
+          return prev.filter((t) => t.id !== userId);
         });
         setTimeout(() => {
-          setTypingUsers(prev => prev.filter(t => t.id !== userId));
+          setTypingUsers((prev) => prev.filter((t) => t.id !== userId));
         }, 2000);
       },
     });
-  }, [id, user._id, registerCallbacks]);
+  }, [identifier, groupId, user._id, registerCallbacks]);
 
-  // Charger groupe et messages
+  // =========================
+  // CHARGEMENT GROUPE ET MESSAGES
+  // =========================
   useEffect(() => {
+    
+
+    let cancelled = false;
+
     const fetchData = async () => {
       try {
-        const { data: groupData } = await axios.get(`${API}/groups/${id}`);
+        let realGroupId = identifier;
+
+        // ✅ Étape 1 : si l'URL contient un username (pas un ObjectId),
+        // on récupère l'_id via la nouvelle route /by-username/:username
+        const isObjectId = /^[a-fA-F0-9]{24}$/.test(identifier);
+
+        if (!isObjectId) {
+          const { data: found } = await axios.get(
+            `${API}/groups/by-username/${identifier}`
+          );
+          realGroupId = found._id;
+        }
+
+        // ✅ Étape 2 : on charge le groupe par son _id réel
+        const { data: groupData } = await axios.get(`${API}/groups/${realGroupId}`);
+        if (cancelled) return;
+
         setGroup(groupData);
+        setGroupId(groupData._id); // ✅ on mémorise l'_id réel
         setIsMember(groupData.isMember);
         setIsAdmin(groupData.isAdmin);
         setMembers(groupData.members || []);
 
+        // ✅ Étape 3 : on charge les messages avec l'_id
         if (groupData.isMember) {
-          const { data: messagesData } = await axios.get(`${API}/groups/${id}/messages`);
+          const { data: messagesData } = await axios.get(
+            `${API}/groups/${realGroupId}/messages`
+          );
+          if (cancelled) return;
+
           setMessages(messagesData);
-          joinGroupRoom(id);
+          joinGroupRoom(realGroupId);
         }
       } catch (err) {
         console.error(err);
         if (err.response?.status === 404) navigate('/groups');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchData();
 
     return () => {
-      leaveGroupRoom(id);
+      cancelled = true;
+      if (groupId) leaveGroupRoom(groupId);
     };
-  }, [id, navigate, joinGroupRoom, leaveGroupRoom]);
+  }, [identifier, navigate, joinGroupRoom, leaveGroupRoom]);
 
-  // =========================
-  // ENVOI DE MESSAGE AVEC REPLY
-  // =========================
+  // ENVOI
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim() || !isMember || sending) return;
+    if (!input.trim() || !isMember || sending || !groupId) return;
 
     const content = input.trim();
     const replyToId = replyingTo?._id || null;
 
     setInput('');
     setSending(true);
-    sendTypingGroup(id, false);
+    sendTypingGroup(groupId, false);
 
-    // ✅ Message temporaire avec replyTo
     const tempMsg = {
       _id: Date.now(),
       content,
       sender: { _id: user._id, name: user.name, avatar: user.avatar },
       createdAt: new Date().toISOString(),
       isTemp: true,
-      replyTo: replyingTo || null
+      replyTo: replyingTo || null,
     };
-    setMessages(prev => [...prev, tempMsg]);
+    setMessages((prev) => [...prev, tempMsg]);
 
     try {
-      const { data } = await axios.post(`${API}/groups/${id}/messages`, {
+      const { data } = await axios.post(`${API}/groups/${groupId}/messages`, {
         content,
-        replyTo: replyToId
+        replyTo: replyToId,
       });
-      setMessages(prev => prev.map(m => m._id === tempMsg._id ? data : m));
-
-      // ✅ Réinitialiser le reply après envoi réussi
+      setMessages((prev) => prev.map((m) => (m._id === tempMsg._id ? data : m)));
       setReplyingTo(null);
     } catch (err) {
-      setMessages(prev => prev.filter(m => m._id !== tempMsg._id));
-      alert(err.response?.data?.message || 'Erreur lors de l\'envoi');
+      setMessages((prev) => prev.filter((m) => m._id !== tempMsg._id));
+      alert(err.response?.data?.message || "Erreur lors de l'envoi");
     } finally {
       setSending(false);
     }
   };
 
-  // Indicateur de frappe
   const handleTyping = (e) => {
     setInput(e.target.value);
-    sendTypingGroup(id, true);
+    if (groupId) sendTypingGroup(groupId, true);
     clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
-      sendTypingGroup(id, false);
+      if (groupId) sendTypingGroup(groupId, false);
     }, 1500);
   };
 
-  // =========================
-  // GESTION DES MESSAGES
-  // =========================
-
+  // MESSAGES
   const handleEdit = (messageId, oldContent) => {
     setEditModal({ open: true, messageId, content: oldContent });
   };
 
   const handleEditSubmit = async () => {
     const { messageId, content } = editModal;
-    if (!content || !content.trim()) return;
+    if (!content || !content.trim() || !groupId) return;
 
     const newContent = content.trim();
-    const oldMessage = messages.find(m => m._id === messageId);
+    const oldMessage = messages.find((m) => m._id === messageId);
 
-    setMessages(prev => prev.map(m =>
-      m._id === messageId
-        ? { ...m, content: newContent, edited: true, editedAt: new Date().toISOString(), isUpdating: true }
-        : m
-    ));
+    setMessages((prev) =>
+      prev.map((m) =>
+        m._id === messageId
+          ? {
+              ...m,
+              content: newContent,
+              edited: true,
+              editedAt: new Date().toISOString(),
+              isUpdating: true,
+            }
+          : m
+      )
+    );
     setEditModal({ open: false, messageId: null, content: '' });
 
     try {
-      await axios.put(`${API}/groups/${id}/messages/${messageId}`, { content: newContent });
-      setMessages(prev => prev.map(m =>
-        m._id === messageId ? { ...m, isUpdating: false } : m
-      ));
+      await axios.put(`${API}/groups/${groupId}/messages/${messageId}`, {
+        content: newContent,
+      });
+      setMessages((prev) =>
+        prev.map((m) => (m._id === messageId ? { ...m, isUpdating: false } : m))
+      );
     } catch (err) {
-      setMessages(prev => prev.map(m =>
-        m._id === messageId
-          ? { ...m, content: oldMessage?.content, edited: false, isUpdating: false }
-          : m
-      ));
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId
+            ? { ...m, content: oldMessage?.content, edited: false, isUpdating: false }
+            : m
+        )
+      );
       alert(err.response?.data?.message || 'Erreur lors de la modification');
     }
   };
@@ -211,37 +252,40 @@ export default function GroupChat() {
 
   const handleDeleteConfirm = async () => {
     const { messageId } = deleteModal;
-    const oldMessage = messages.find(m => m._id === messageId);
+    const oldMessage = messages.find((m) => m._id === messageId);
+    if (!groupId) return;
 
-    setMessages(prev => prev.map(m =>
-      m._id === messageId
-        ? { ...m, deleted: true, content: '[Message supprimé]', isDeleting: true }
-        : m
-    ));
+    setMessages((prev) =>
+      prev.map((m) =>
+        m._id === messageId
+          ? { ...m, deleted: true, content: '[Message supprimé]', isDeleting: true }
+          : m
+      )
+    );
     setDeleteModal({ open: false, messageId: null });
 
     try {
-      await axios.delete(`${API}/groups/${id}/messages/${messageId}`);
-      setMessages(prev => prev.map(m =>
-        m._id === messageId ? { ...m, isDeleting: false } : m
-      ));
+      await axios.delete(`${API}/groups/${groupId}/messages/${messageId}`);
+      setMessages((prev) =>
+        prev.map((m) => (m._id === messageId ? { ...m, isDeleting: false } : m))
+      );
     } catch (err) {
-      setMessages(prev => prev.map(m =>
-        m._id === messageId
-          ? { ...m, deleted: false, content: oldMessage?.content, isDeleting: false }
-          : m
-      ));
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId
+            ? { ...m, deleted: false, content: oldMessage?.content, isDeleting: false }
+            : m
+        )
+      );
       alert(err.response?.data?.message || 'Erreur lors de la suppression');
     }
   };
 
-  // =========================
-  // GESTION DU GROUPE
-  // =========================
-
+  // GROUPE
   const handleJoin = async () => {
+    if (!groupId) return;
     try {
-      await axios.post(`${API}/groups/${id}/join`);
+      await axios.post(`${API}/groups/${groupId}/join`);
       window.location.reload();
     } catch (err) {
       alert(err.response?.data?.message || 'Erreur');
@@ -253,9 +297,12 @@ export default function GroupChat() {
   };
 
   const confirmKick = async (memberId) => {
+    if (!groupId) return;
     try {
-      await axios.delete(`${API}/groups/${id}/members/${memberId}`);
-      setMembers(prev => prev.filter(m => (m.user?._id || m.user) !== memberId));
+      await axios.delete(`${API}/groups/${groupId}/members/${memberId}`);
+      setMembers((prev) =>
+        prev.filter((m) => (m.user?._id || m.user) !== memberId)
+      );
       setKickModal({ open: false, memberId: null, memberName: '' });
     } catch (err) {
       console.error(err);
@@ -264,25 +311,22 @@ export default function GroupChat() {
   };
 
   const handleDeleteGroup = async () => {
+    if (!groupId) return;
     try {
-      await axios.delete(`${API}/groups/${id}`);
+      await axios.delete(`${API}/groups/${groupId}`);
       navigate('/groups');
     } catch (err) {
-      alert(err.response?.data?.message || "Erreur lors de la suppression du groupe");
+      alert(err.response?.data?.message || 'Erreur lors de la suppression du groupe');
     } finally {
       setShowDeleteGroupModal(false);
     }
   };
 
-  // =========================
-  // UTILITAIRES
-  // =========================
-
   const formatTime = (date) => {
     const d = new Date(date);
     const now = new Date();
     const diff = now - d;
-    if (diff < 60000) return 'À l\'instant';
+    if (diff < 60000) return "À l'instant";
     if (diff < 3600000) return `${Math.floor(diff / 60000)} min`;
     if (d.toDateString() === now.toDateString()) {
       return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -293,10 +337,6 @@ export default function GroupChat() {
   const getGroupColor = (name) => {
     return COLORS[(name?.charCodeAt(0) || 0) % COLORS.length];
   };
-
-  // =========================
-  // RENDU
-  // =========================
 
   if (loading) {
     return (
@@ -319,20 +359,19 @@ export default function GroupChat() {
 
   return (
     <div className={styles.container}>
-      {/* Header */}
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => navigate('/groups')}>
           ←
         </button>
-
         <div className={styles.headerInfo}>
           <h2>{group.name}</h2>
           <div className={styles.headerStats}>
-            <span>👥 {members.length} membre{members.length > 1 ? 's' : ''}</span>
+            <span>
+              👥 {members.length} membre{members.length > 1 ? 's' : ''}
+            </span>
             {group.isPrivate && <span className={styles.privateBadge}>🔒 Privé</span>}
           </div>
         </div>
-
         {isAdmin && (
           <button
             className={styles.deleteBtn}
@@ -342,7 +381,6 @@ export default function GroupChat() {
             🗑️
           </button>
         )}
-
         <button
           className={`${styles.membersBtn} ${showMembers ? styles.active : ''}`}
           onClick={() => setShowMembers(!showMembers)}
@@ -351,14 +389,15 @@ export default function GroupChat() {
         </button>
       </div>
 
-      {/* Main content */}
       <div className={styles.main}>
         <div className={styles.chatArea}>
           {!isMember ? (
             <div className={styles.locked}>
               <div className={styles.lockedIcon}>🔒</div>
               <h3>Groupe privé</h3>
-              <p>Rejoignez ce groupe pour voir les messages et participer à la discussion</p>
+              <p>
+                Rejoignez ce groupe pour voir les messages et participer à la discussion
+              </p>
               <button onClick={handleJoin} className={styles.joinBtn}>
                 + Rejoindre le groupe
               </button>
@@ -390,10 +429,15 @@ export default function GroupChat() {
                     return (
                       <div
                         key={msg._id}
-                        className={`${styles.message} ${isOwn ? styles.own : styles.other}`}
+                        className={`${styles.message} ${
+                          isOwn ? styles.own : styles.other
+                        }`}
                       >
                         {!isOwn && (
-                          <div className={styles.avatar} style={{ background: senderColor }}>
+                          <div
+                            className={styles.avatar}
+                            style={{ background: senderColor }}
+                          >
                             {senderName[0]?.toUpperCase()}
                           </div>
                         )}
@@ -402,18 +446,26 @@ export default function GroupChat() {
                             <div className={styles.sender}>
                               {senderName}
                               {msg.sender?.department && (
-                                <span className={styles.department}> · {msg.sender.department}</span>
+                                <span className={styles.department}>
+                                  {' '}
+                                  · {msg.sender.department}
+                                </span>
                               )}
                             </div>
                           )}
 
-                          {/* ✅ AFFICHAGE DU MESSAGE CITÉ (REPLY) */}
                           {msg.replyTo && !msg.replyTo.deleted && (
                             <div
                               className={styles.replyPreview}
                               onClick={() => {
-                                const el = document.getElementById(`msg-${msg.replyTo._id}`);
-                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                const el = document.getElementById(
+                                  `msg-${msg.replyTo._id}`
+                                );
+                                if (el)
+                                  el.scrollIntoView({
+                                    behavior: 'smooth',
+                                    block: 'center',
+                                  });
                               }}
                             >
                               <span className={styles.replyAuthor}>
@@ -432,23 +484,30 @@ export default function GroupChat() {
                             </div>
                           )}
 
-                          <div className={`${styles.bubble} ${isOwn ? styles.bubbleOwn : styles.bubbleOther}`}>
+                          <div
+                            className={`${styles.bubble} ${
+                              isOwn ? styles.bubbleOwn : styles.bubbleOther
+                            }`}
+                          >
                             {msg.content}
-                            {msg.edited && <span className={styles.edited}> (modifié)</span>}
-                            {msg.isUpdating && <span className={styles.syncing}> ✎</span>}
+                            {msg.edited && (
+                              <span className={styles.edited}> (modifié)</span>
+                            )}
+                            {msg.isUpdating && (
+                              <span className={styles.syncing}> ✎</span>
+                            )}
                           </div>
 
                           <div className={styles.meta}>
-                            <span className={styles.time}>{formatTime(msg.createdAt)}</span>
-                            {isOwn 
-                            && (<span className={styles.status}>
-                                        {msg.readBy?.length>1? '✓✓' : '✓'}</span>)
-                                        
-                            }
-
-                            {/* ✅ MENU D'ACTIONS AVEC REPLY */}
+                            <span className={styles.time}>
+                              {formatTime(msg.createdAt)}
+                            </span>
+                            {isOwn && (
+                              <span className={styles.status}>
+                                {msg.readBy?.length > 1 ? '✓✓' : '✓'}
+                              </span>
+                            )}
                             <div className={styles.actions}>
-                              {/* ✅ Bouton Répondre - disponible pour TOUS */}
                               <button
                                 onClick={() => setReplyingTo(msg)}
                                 className={styles.replyBtn}
@@ -456,15 +515,23 @@ export default function GroupChat() {
                               >
                                 ↩️
                               </button>
-
                               {isOwn && (
                                 <>
-                                  <button onClick={() => handleEdit(msg._id, msg.content)}>✏️</button>
-                                  <button onClick={() => handleDeleteClick(msg._id)}>🗑️</button>
+                                  <button
+                                    onClick={() => handleEdit(msg._id, msg.content)}
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button onClick={() => handleDeleteClick(msg._id)}>
+                                    🗑️
+                                  </button>
                                 </>
                               )}
                               {!isOwn && isAdmin && (
-                                <button className={styles.adminDelete} onClick={() => handleDeleteClick(msg._id)}>
+                                <button
+                                  className={styles.adminDelete}
+                                  onClick={() => handleDeleteClick(msg._id)}
+                                >
                                   🗑️
                                 </button>
                               )}
@@ -479,10 +546,12 @@ export default function GroupChat() {
                 {typingUsers.length > 0 && (
                   <div className={styles.typingIndicator}>
                     <div className={styles.typingBubble}>
-                      <span></span><span></span><span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
                     </div>
                     <p>
-                      {typingUsers.map(t => t.name).join(', ')}
+                      {typingUsers.map((t) => t.name).join(', ')}
                       {typingUsers.length > 1 ? ' écrivent' : ' écrit'}...
                     </p>
                   </div>
@@ -490,11 +559,7 @@ export default function GroupChat() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* ========================= */}
-              {/* FORMULAIRE D'ENVOI AVEC REPLY */}
-              {/* ========================= */}
               <form onSubmit={handleSend} className={styles.inputForm}>
-                {/* ✅ BANDEAU DE RÉPONSE */}
                 {replyingTo && (
                   <div className={styles.replyBanner}>
                     <div className={styles.replyBannerContent}>
@@ -515,7 +580,6 @@ export default function GroupChat() {
                     </button>
                   </div>
                 )}
-
                 <div className={styles.inputRow}>
                   <input
                     type="text"
@@ -534,7 +598,11 @@ export default function GroupChat() {
                     }
                     className={styles.input}
                   />
-                  <button type="submit" disabled={!input.trim() || sending} className={styles.sendBtn}>
+                  <button
+                    type="submit"
+                    disabled={!input.trim() || sending}
+                    className={styles.sendBtn}
+                  >
                     {sending ? '...' : '→'}
                   </button>
                 </div>
@@ -543,12 +611,16 @@ export default function GroupChat() {
           )}
         </div>
 
-        {/* Membres Panel */}
         {showMembers && (
           <div className={styles.membersPanel}>
             <div className={styles.membersHeader}>
               <h3>Membres ({members.length})</h3>
-              <button onClick={() => setShowMembers(false)} className={styles.closePanel}>✕</button>
+              <button
+                onClick={() => setShowMembers(false)}
+                className={styles.closePanel}
+              >
+                ✕
+              </button>
             </div>
             <div className={styles.membersList}>
               {members.map((m, idx) => {
@@ -560,7 +632,10 @@ export default function GroupChat() {
 
                 return (
                   <div key={memberId || idx} className={styles.memberItem}>
-                    <div className={styles.memberAvatar} style={{ background: memberColor }}>
+                    <div
+                      className={styles.memberAvatar}
+                      style={{ background: memberColor }}
+                    >
                       {memberName[0]?.toUpperCase()}
                     </div>
                     <div className={styles.memberInfo}>
@@ -568,12 +643,19 @@ export default function GroupChat() {
                         {memberName}
                         {isMe && <span className={styles.youTag}> (Vous)</span>}
                       </div>
-                      {memberDept && <div className={styles.memberDept}>{memberDept}</div>}
+                      {memberDept && (
+                        <div className={styles.memberDept}>{memberDept}</div>
+                      )}
                     </div>
                     <div className={styles.memberBadges}>
-                      {m.role === 'admin' && <span className={styles.adminBadge}>Admin</span>}
+                      {m.role === 'admin' && (
+                        <span className={styles.adminBadge}>Admin</span>
+                      )}
                       {isAdmin && !isMe && m.role !== 'admin' && (
-                        <button onClick={() => handleKick(memberId, memberName)} className={styles.kickBtn}>
+                        <button
+                          onClick={() => handleKick(memberId, memberName)}
+                          className={styles.kickBtn}
+                        >
                           Exclure
                         </button>
                       )}
@@ -586,23 +668,41 @@ export default function GroupChat() {
         )}
       </div>
 
-      {/* MODALE D'ÉDITION */}
       {editModal.open && (
-        <div className={styles.modalOverlay} onClick={() => setEditModal({ open: false, messageId: null, content: '' })}>
-          <div className={styles.editModal} onClick={e => e.stopPropagation()}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() =>
+            setEditModal({ open: false, messageId: null, content: '' })
+          }
+        >
+          <div className={styles.editModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h3>✏️ Modifier le message</h3>
-              <button onClick={() => setEditModal({ open: false, messageId: null, content: '' })} className={styles.closeModal}>✕</button>
+              <button
+                onClick={() =>
+                  setEditModal({ open: false, messageId: null, content: '' })
+                }
+                className={styles.closeModal}
+              >
+                ✕
+              </button>
             </div>
             <textarea
               value={editModal.content}
-              onChange={e => setEditModal(prev => ({ ...prev, content: e.target.value }))}
+              onChange={(e) =>
+                setEditModal((prev) => ({ ...prev, content: e.target.value }))
+              }
               className={styles.modalTextarea}
               rows={4}
               autoFocus
             />
             <div className={styles.modalFooter}>
-              <button onClick={() => setEditModal({ open: false, messageId: null, content: '' })} className={styles.cancelModalBtn}>
+              <button
+                onClick={() =>
+                  setEditModal({ open: false, messageId: null, content: '' })
+                }
+                className={styles.cancelModalBtn}
+              >
                 Annuler
               </button>
               <button onClick={handleEditSubmit} className={styles.submitModalBtn}>
@@ -613,18 +713,26 @@ export default function GroupChat() {
         </div>
       )}
 
-      {/* MODALE DE CONFIRMATION SUPPRESSION MESSAGE */}
       {deleteModal.open && (
-        <div className={styles.modalOverlay} onClick={() => setDeleteModal({ open: false, messageId: null })}>
-          <div className={styles.deleteModal} onClick={e => e.stopPropagation()}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setDeleteModal({ open: false, messageId: null })}
+        >
+          <div className={styles.deleteModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalIcon}>🗑️</div>
             <h3>Supprimer ce message ?</h3>
             <p>Cette action est irréversible.</p>
             <div className={styles.modalFooter}>
-              <button onClick={() => setDeleteModal({ open: false, messageId: null })} className={styles.cancelModalBtn}>
+              <button
+                onClick={() => setDeleteModal({ open: false, messageId: null })}
+                className={styles.cancelModalBtn}
+              >
                 Annuler
               </button>
-              <button onClick={handleDeleteConfirm} className={styles.deleteModalBtn}>
+              <button
+                onClick={handleDeleteConfirm}
+                className={styles.deleteModalBtn}
+              >
                 Supprimer
               </button>
             </div>
@@ -632,24 +740,28 @@ export default function GroupChat() {
         </div>
       )}
 
-      {/* MODALE DE CONFIRMATION EXCLUSION MEMBRE */}
       {kickModal.open && (
         <div
           className={styles.modalOverlay}
-          onClick={() => setKickModal({ open: false, memberId: null, memberName: '' })}
+          onClick={() =>
+            setKickModal({ open: false, memberId: null, memberName: '' })
+          }
         >
-          <div className={styles.deleteModal} onClick={e => e.stopPropagation()}>
+          <div className={styles.deleteModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalIcon}>🚫</div>
             <h3>Exclure le membre</h3>
             <p>
-              Voulez-vous vraiment exclure <strong>{kickModal.memberName}</strong> du groupe ?
+              Voulez-vous vraiment exclure{' '}
+              <strong>{kickModal.memberName}</strong> du groupe ?
             </p>
             <p style={{ color: '#ef4444', fontSize: '0.9rem', marginTop: '4px' }}>
               Cette action est irréversible.
             </p>
             <div className={styles.modalFooter}>
               <button
-                onClick={() => setKickModal({ open: false, memberId: null, memberName: '' })}
+                onClick={() =>
+                  setKickModal({ open: false, memberId: null, memberName: '' })
+                }
                 className={styles.cancelModalBtn}
               >
                 Annuler
@@ -665,7 +777,6 @@ export default function GroupChat() {
         </div>
       )}
 
-      {/* MODALE DE CONFIRMATION SUPPRESSION GROUPE */}
       <ConfirmModal
         isOpen={showDeleteGroupModal}
         title="Supprimer le groupe"
