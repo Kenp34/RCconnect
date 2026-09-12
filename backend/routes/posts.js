@@ -1,8 +1,13 @@
 const router = require('express').Router();
 const { protect } = require('../middleware/auth');
 const Post = require('../models/Post');
+<<<<<<< HEAD
 const upload=require('../middleware/Upload');
 const PERMISSIONS = require('../config/permissions');
+=======
+const upload=require('../middleware/upload');
+
+>>>>>>> 1e8f43a0069b6799091bfec45f3650567c0b22e0
 
 // GET /api/posts/user/:userId - Récupérer les posts d'un utilisateur
 router.get('/user/:userId', protect, async (req, res) => {

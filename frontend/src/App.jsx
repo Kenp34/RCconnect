@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+<<<<<<< HEAD
 import ProtectedRoute from './components/ProtectedRoute';
 //import AdminRoute from './components/ProtectedRoute';
 //import ManageRoute from './components/ProtectedRoute';
@@ -7,10 +8,14 @@ import Layout from './components/Layout';
 import AdminPanel from './pages/AdminPanel'
 import AdminLayout from './components/AdminLayout'; // ✅ Nouveau
 import Manager from './pages/Manager'
+=======
+import ProtectedRoute from './Components/ProtectedRoute';
+import Layout from './Components/Layout';
+>>>>>>> 1e8f43a0069b6799091bfec45f3650567c0b22e0
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Feed from './pages/Feed';
-import Profile from './pages/Profile';
+import Profile from './pages/profile';
 import Message from './pages/Message';
 import Directory from './pages/Directory';
 import Group from './pages/Group';
@@ -138,33 +143,12 @@ export default function App() {
 }
 
 
+<<<<<<< HEAD
 
 
 
 
 /*!SECTION
+=======
+>>>>>>> 1e8f43a0069b6799091bfec45f3650567c0b22e0
 
-
-import Notifications from './pages/Notifications';
-import GroupPage     from './pages/GroupPage';
-import Groups        from './pages/Groups';
-
-// Dans les Routes
-<Route path="/notifications" element={
-  <ProtectedRoute>
-    <Layout><Notifications /></Layout>
-  </ProtectedRoute>
-} />
-
-<Route path="/groups" element={
-  <ProtectedRoute>
-    <Layout><Groups /></Layout>
-  </ProtectedRoute>
-} />
-
-<Route path="/groups/:id" element={
-  <ProtectedRoute>
-    <Layout><GroupPage /></Layout>
-  </ProtectedRoute>
-} />
-*/

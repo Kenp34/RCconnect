@@ -12,13 +12,27 @@ const server = http.createServer(app);
 // Configuration Socket.io
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: /vercel\.app$/,
     methods: ['GET', 'POST']
   }
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true
+}));
+
+app.get('/',(req , res) => {
+   res.json({ message: 'RCconnect API'});
+})
+
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -54,10 +68,11 @@ require('./socket/index')(io);
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     server.listen(5001, () => {
-      console.log('✅ Serveur démarré sur http://localhost:5001');
+      console.log('✅ Serveur démarré sur http://localhost:5001 :',process.env.MONGODB_URI);
     });
   })
   .catch(err => console.error('❌ Erreur MongoDB:', err));
+<<<<<<< HEAD
 
 */
 
@@ -73,3 +88,5 @@ mongoose.connect(process.env.MONGODB_URI)
         });
     })
     .catch(err => console.error('❌ Erreur MongoDB:', err));
+=======
+>>>>>>> 1e8f43a0069b6799091bfec45f3650567c0b22e0
