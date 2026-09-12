@@ -597,5 +597,88 @@ Avant de dire "c'est fini" :
 
 
 
+## Solution complète, étape par étape
 
+### 1. Récupérer l'historique distant et fusionner avec le vôtre
+
+```bash
+git pull origin main --allow-unrelated-histories
+```
+
+**Ce qui va se passer** : Git télécharge les commits de GitHub, puis tente de les fusionner automatiquement avec vos commits locaux.
+
+### 2. Cas A — Aucun conflit détecté
+
+Git ouvre automatiquement un éditeur (souvent VS Code ou Vim) avec un message de fusion pré-rempli, du type :
+```
+Merge branch 'main' of https://github.com/Kenp34/RCconnect
+```
+
+- Dans VS Code : appuyez sur `Ctrl+S` pour sauvegarder, puis fermez l'onglet
+- Dans Vim (si ça s'ouvre en ligne de commande) : tapez `:wq` puis Entrée
+
+Passez directement à l'étape 4.
+
+### 3. Cas B — Conflit détecté (message "CONFLICT")
+
+Git affichera quelque chose comme :
+```
+CONFLICT (add/add): Merge conflict in README.md
+Automatic merge failed; fix conflicts and then commit the result.
+```
+
+**Ouvrez le fichier en conflit dans VS Code**. Vous verrez des marqueurs comme ceci :
+```
+<<<<<<< HEAD
+Contenu de VOTRE version locale
+=======
+Contenu de la version GitHub
+>>>>>>> branch-name
+```
+
+VS Code affiche généralement des boutons cliquables au-dessus du conflit : **Accept Current Change** / **Accept Incoming Change** / **Accept Both Changes**. Choisissez celui qui convient, puis supprimez manuellement les marqueurs `<<<<<<<`, `=======`, `>>>>>>>` s'il en reste.
+
+Une fois le(s) fichier(s) corrigé(s) :
+```bash
+git add .
+git commit -m "Résolution du conflit de fusion avec GitHub"
+```
+
+### 4. Pousser le résultat vers GitHub
+
+```bash
+git push origin main
+```
+
+Cette fois, la commande doit réussir sans erreur `[rejected]`.
+
+### 5. Vérification finale
+
+```bash
+git status
+```
+
+Doit afficher :
+```
+On branch main
+Your branch is up to date with 'origin/main'.
+nothing to commit, working tree clean
+```
+
+Si vous voyez bien ce message, tout est synchronisé correctement entre votre machine et GitHub.
+
+---
+
+## Résumé — les 4 commandes dans l'ordre
+
+```bash
+git pull origin main --allow-unrelated-histories
+# → si conflit : corriger les fichiers, puis :
+git add .
+git commit -m "Résolution du conflit de fusion"
+# → dans tous les cas, à la fin :
+git push origin main
+```
+
+**Si à un moment vous êtes bloqué** (message d'erreur inattendu, VS Code coincé sur l'éditeur de commit, conflit que vous ne comprenez pas), envoyez-moi une capture d'écran de l'état exact du terminal et je vous guiderai pour la suite.
 
