@@ -26,7 +26,7 @@ export default function MessageMenu({ message, isOwn, onDelete, onEdit, onReply 
         <button className={styles.menuTrigger} onClick={() => setShowMenu(!showMenu)}>⋮</button>
         {showMenu && (
           <div className={styles.menuDropdown}>
-            <button className={styles.menuItem} onClick={handleReply}>
+            <button className={styles.menuItem} onClick={handleReply} >
               ↩️ Répondre
             </button>
             {/* Modifier / Supprimer : uniquement sur ses propres messages */}

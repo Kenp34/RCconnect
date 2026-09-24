@@ -1,14 +1,18 @@
-import { useState } from 'react';
+
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import styles from './Css/Navbar.module.css';
 import NotificationBell from './NotificationBell';
+import {useLocation} from 'react-router-dom'
+import { useSearch } from '../context/SearchContext';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
-
+  
+   const location=useLocation()
+   const{searchQuery,handleSearch}=useSearch()
+   const isOnFeedPage =location.pathname==='/feed'
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -49,9 +53,11 @@ export default function Navbar() {
         <span className={styles.searchIcon}>🔍</span>
         <input
           type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Rechercher  publications..."
+          value={searchQuery}
+          onChange={handleSearch}
+          disabled={!isOnFeedPage}
+          title={!isOnFeedPage? "Disponible uniquement sur le fil d'actualité" : ""}
+          placeholder={isOnFeedPage? "Rechercher  publications..." : "Pas Fonctionnelle"}
           className={styles.searchInput}
         />
       </div>

@@ -581,8 +581,7 @@ export default function GroupChat() {
                   </div>
                 )}
                 <div className={styles.inputRow}>
-                  <input
-                    type="text"
+                  <textarea
                     value={input}
                     onChange={handleTyping}
                     onKeyDown={(e) => {
@@ -594,9 +593,10 @@ export default function GroupChat() {
                     placeholder={
                       replyingTo
                         ? `Répondre à ${replyingTo.sender?.name}...`
-                        : 'Écrivez un message... (Entrée pour envoyer)'
+                        : 'Écrivez un message... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)'
                     }
                     className={styles.input}
+                    rows={1}
                   />
                   <button
                     type="submit"

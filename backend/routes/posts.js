@@ -1,13 +1,12 @@
 const router = require('express').Router();
 const { protect } = require('../middleware/auth');
 const Post = require('../models/Post');
-<<<<<<< HEAD
-const upload=require('../middleware/Upload');
-const PERMISSIONS = require('../config/permissions');
-=======
-const upload=require('../middleware/upload');
 
->>>>>>> 1e8f43a0069b6799091bfec45f3650567c0b22e0
+const upload = require('../middleware/Upload');
+const PERMISSIONS = require('../config/permissions');
+
+
+
 
 // GET /api/posts/user/:userId - Récupérer les posts d'un utilisateur
 router.get('/user/:userId', protect, async (req, res) => {
@@ -15,7 +14,7 @@ router.get('/user/:userId', protect, async (req, res) => {
     const posts = await Post.find({ author: req.params.userId })
       .sort({ createdAt: -1 })
       .populate('author', 'name avatar');
-   
+
     console.log("📝 Posts trouvés pour", req.params.userId, ":", posts.length);
     res.json(posts);
   } catch (err) {
@@ -28,18 +27,41 @@ router.get('/user/:userId', protect, async (req, res) => {
 router.get('/feed', protect, async (req, res) => {
   try {
     const ids = [...req.user.following, req.user._id];
-   
+
     const posts = await Post.find({ author: { $in: ids } })
       .populate('author', 'name avatar department')
       .populate('comments.user', 'name avatar')
       .sort({ createdAt: -1 })
       .limit(20);
-   
+
     res.json(posts);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
+
+// GET /api/posts/search?q=motclé — Rechercher dans les publications
+router.get('/search', protect, async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    if (!q || q.trim() === '') {
+      return res.json([]);
+    }
+
+    const posts = await Post.find({
+      content: { $regex: q, $options: 'i' } // recherche insensible à la casse
+    })
+      .populate('author', 'name username avatar department')
+      .sort({ createdAt: -1 })
+      .limit(50);
+    console.log(posts)
+    res.json(posts);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 // POST /api/posts - Créer un post
 router.post('/', protect, upload.single('image'), async (req, res) => {
@@ -49,7 +71,7 @@ router.post('/', protect, upload.single('image'), async (req, res) => {
       content: req.body.content,
       image: req.file ? `/uploads/${req.file.filename}` : null
     };
-   
+
     const post = await Post.create(postData);
     await post.populate('author', 'name avatar department');
     res.status(201).json(post);
@@ -65,10 +87,10 @@ router.delete('/:id', protect, async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post introuvable' });
 
-     const isOwner = post.author.toString() === req.user._id.toString();
+    const isOwner = post.author.toString() === req.user._id.toString();
     const canDeleteOthers = PERMISSIONS[req.user.role]?.posts.deleteOthers;
 
-    if (!isOwner && !canDeleteOthers){
+    if (!isOwner && !canDeleteOthers) {
       return res.status(403).json({ message: 'Non autorisé' });
     }
     await post.deleteOne();
@@ -83,11 +105,11 @@ router.post('/:id/like', protect, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post introuvable' });
-   
+
     const liked = post.likes.some(
       id => id.toString() === req.user._id.toString()
     );
-   
+
     if (liked) {
       post.likes = post.likes.filter(
         id => id.toString() !== req.user._id.toString()
@@ -95,36 +117,36 @@ router.post('/:id/like', protect, async (req, res) => {
     } else {
       post.likes.push(req.user._id);
     }
-    
-     // Créer une notification seulement si ce n'est pas son propre post
-      if (post.author._id.toString() !== req.user._id.toString()) {
-        const Notification = require('../models/Notification');
-        const notif = await Notification.create({
-          recipient: post.author._id,
-          sender:    req.user._id,
-          type:      'like',
-          post:      post._id,
-          message:   `${req.user.name} a aimé votre publication`,
-        });
 
-        // Envoyer la notification en temps réel via Socket.io
-        const io = req.app.get('io');       
-         io.to(`user_${post.author._id}`).emit('notification', notif);
-      }
-   
+    // Créer une notification seulement si ce n'est pas son propre post
+    if (post.author._id.toString() !== req.user._id.toString()) {
+      const Notification = require('../models/Notification');
+      const notif = await Notification.create({
+        recipient: post.author._id,
+        sender: req.user._id,
+        type: 'like',
+        post: post._id,
+        message: `${req.user.name} a aimé votre publication`,
+      });
+
+      // Envoyer la notification en temps réel via Socket.io
+      const io = req.app.get('io');
+      io.to(`user_${post.author._id}`).emit('notification', notif);
+    }
+
     await post.save();
-   
+
     res.json({
       liked: !liked,
       likesCount: post.likes.length,
       likes: post.likes,
     });
 
-   
-    
 
 
-  }catch (err) {
+
+
+  } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
@@ -134,30 +156,30 @@ router.post('/:id/comment', protect, async (req, res) => {
   try {
     const { text } = req.body;
     if (!text) return res.status(400).json({ message: 'Texte requis' });
-   
+
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post introuvable' });
-   
+
     post.comments.push({ user: req.user._id, text });
     await post.save();
-   
+
     await post.populate('comments.user', 'name department avatar');
 
-   // Créer une notification seulement si ce n'est pas son propre post
-      if (post.author._id.toString() !== req.user._id.toString()) {
-        const Notification = require('../models/Notification');
-        const notif = await Notification.create({
-          recipient: post.author._id,
-          sender:    req.user._id,
-          type:      'comment',
-          post:      post._id,
-          message:   `${req.user.name} a commenté votre publication`,
-        });
+    // Créer une notification seulement si ce n'est pas son propre post
+    if (post.author._id.toString() !== req.user._id.toString()) {
+      const Notification = require('../models/Notification');
+      const notif = await Notification.create({
+        recipient: post.author._id,
+        sender: req.user._id,
+        type: 'comment',
+        post: post._id,
+        message: `${req.user.name} a commenté votre publication`,
+      });
 
-        // Envoyer la notification en temps réel via Socket.io
-        const io = req.app.get('io');       
-         io.to(`user_${post.author._id}`).emit('notification', notif);
-      }
+      // Envoyer la notification en temps réel via Socket.io
+      const io = req.app.get('io');
+      io.to(`user_${post.author._id}`).emit('notification', notif);
+    }
 
     const newComment = post.comments[post.comments.length - 1];
     res.status(201).json(newComment);

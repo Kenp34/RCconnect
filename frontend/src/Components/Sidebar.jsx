@@ -20,7 +20,7 @@ export default function Sidebar() {
   const [myGroups, setMyGroups] = useState([]);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-
+  const getProfileIdentifier = (group)=> group?.username || group?._id
   // Charger les groupes de l'utilisateur
   useEffect(() => {
     const fetchMyGroups = async () => {
@@ -100,7 +100,7 @@ export default function Sidebar() {
           <ul className={styles.groupsList}>
             {myGroups.slice(0, 5).map(group => (
               <li key={group._id}>
-                <Link to={`/groups/${group._id}`} className={styles.groupLink}>
+                <Link to={`/groups/${getProfileIdentifier(group)}`} className={styles.groupLink}>
                   <div className={styles.groupAvatar}>
                     {group.avatar ? (
                       <img src={group.avatar} alt={group.name} />

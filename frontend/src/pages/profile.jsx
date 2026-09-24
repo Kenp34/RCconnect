@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-<<<<<<< HEAD
+
 import PostCard from '../components/PostCard';
 import styles from './profile.module.css';
-=======
-import PostCard from '../Components/PostCard';
->>>>>>> 1e8f43a0069b6799091bfec45f3650567c0b22e0
+
+
+
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 const BASE =

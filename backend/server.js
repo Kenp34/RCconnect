@@ -88,5 +88,3 @@ mongoose.connect(process.env.MONGODB_URI)
         });
     })
     .catch(err => console.error('❌ Erreur MongoDB:', err));
-=======
->>>>>>> 1e8f43a0069b6799091bfec45f3650567c0b22e0

@@ -29,7 +29,7 @@
 .menuDropdown {
   position: absolute;
   bottom: 32px;
-  right: 0;
+  right: -99px;
   background: #1E2336;
   border: 1px solid #2A2F45;
   border-radius: 12px;
@@ -44,7 +44,9 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 10px 14px;
+  padding: 11px 19px;
+
+
   background: transparent;
   border: none;
   color: #E2E8F0;
